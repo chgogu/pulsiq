@@ -27,7 +27,14 @@ class ScoreHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return Semantics(
+      button: true,
+      label: result.score == null
+          ? 'PulsIQ Score, no data yet. Tap for the breakdown.'
+          : 'PulsIQ Score ${result.score}, $_statusWord'
+              '${result.isFuelOnly ? ', fuel-only' : ''}. '
+              'Tap for the component breakdown.',
+      child: Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () => _showBreakdown(context),
@@ -75,11 +82,12 @@ class ScoreHero extends StatelessWidget {
                   ),
                 ],
               ),
-              const PulseWave(height: 44),
+              ExcludeSemantics(child: const PulseWave(height: 44)),
             ],
           ),
         ),
       ),
+    ),
     );
   }
 

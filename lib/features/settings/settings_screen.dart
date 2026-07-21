@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../auth/auth_service.dart';
+import '../../data/data_manager.dart';
 import '../../data/forecast_providers.dart';
 import '../../data/providers.dart';
 import '../../health/health_providers.dart';
@@ -109,6 +112,29 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.download_outlined),
+                  title: const Text('Export my data'),
+                  subtitle: const Text('Everything PulsIQ holds, as JSON'),
+                  onTap: () => _exportData(context, ref),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(Icons.delete_forever_outlined,
+                      color: theme.colorScheme.error),
+                  title: Text('Delete everything',
+                      style: TextStyle(color: theme.colorScheme.error)),
+                  subtitle:
+                      const Text('Wipe all data and keys from this device'),
+                  onTap: () => _deleteEverything(context, ref),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -131,6 +157,52 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _exportData(BuildContext context, WidgetRef ref) async {
+  final json = await ref.read(dataManagerProvider).exportJson();
+  if (!context.mounted) return;
+  if (kIsWeb) {
+    await Clipboard.setData(ClipboardData(text: json));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(
+          content: Text('Export copied to clipboard (JSON).')));
+  } else {
+    await SharePlus.instance.share(ShareParams(
+      text: json,
+      subject: 'PulsIQ data export',
+    ));
+  }
+}
+
+Future<void> _deleteEverything(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete everything?'),
+      content: const Text(
+        'This erases all logs, biometrics, and the encryption keys from '
+        'this device. If you have no cloud backup, this cannot be undone.',
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  await ref.read(dataManagerProvider).deleteEverything();
+  await ref.read(authServiceProvider).signOut();
+  if (context.mounted) context.go('/onboarding');
 }
 
 class PrivacyScreen extends ConsumerWidget {

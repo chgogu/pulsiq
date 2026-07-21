@@ -23,20 +23,26 @@ class HydrationCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            SizedBox(
-              width: 92,
-              height: 92,
-              child: CustomPaint(
-                painter: _RingPainter(
-                  progress: _progress,
-                  color: theme.colorScheme.primary,
-                  track: theme.colorScheme.surfaceContainerHighest,
-                ),
-                child: Center(
-                  child: Text(
-                    '${(_progress * 100).round()}%',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+            Semantics(
+              label: 'Hydration ${(_progress * 100).round()} percent, '
+                  '$consumedMl of $targetMl millilitres',
+              child: ExcludeSemantics(
+                child: SizedBox(
+                  width: 92,
+                  height: 92,
+                  child: CustomPaint(
+                    painter: _RingPainter(
+                      progress: _progress,
+                      color: theme.colorScheme.primary,
+                      track: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${(_progress * 100).round()}%',
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
                   ),
                 ),
               ),

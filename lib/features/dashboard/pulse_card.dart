@@ -122,7 +122,10 @@ class _BiometricRow extends StatelessWidget {
             ? Colors.greenAccent.shade200
             : Colors.green.shade700)
         : Colors.orange.shade700;
-    return Padding(
+    return Semantics(
+      label: '${b.label}: ${b.todayText}, ${b.deltaText}. ${b.insight}',
+      container: true,
+      child: Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,6 +184,7 @@ class _BiometricRow extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

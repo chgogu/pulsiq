@@ -166,9 +166,34 @@ Non-negotiables from §0 are not re-litigated here.
 - **PulsIQ Score v1** completed in M5 (baseline-driven cardiac + fuel-only
   renormalization); M6 adds completed-walk minutes as an input.
 
-- **Verification gap:** M1's "runs on iOS simulator + Android emulator"
-  criterion cannot be met on this machine yet — Xcode is only partially
-  installed (needs App Store install + `xcodebuild -runFirstLaunch`) and there
-  is no Android SDK/AVD. Verified instead with `flutter analyze`, the full
-  test suite, and a live run on the web device. Rerun on both simulators once
-  the toolchains are installed.
+## M7 — Hardening & store prep (2026-07-21)
+
+- **Data export + delete-all** (§4): Settings → one tile each (≤3 taps
+  incl. the delete confirmation). Export is pretty JSON of every table
+  (keys deliberately excluded); share sheet on device, clipboard on web.
+  Delete wipes all tables + KeyVault, signs out, returns to onboarding.
+  Round-trip + wipe covered in test/data_manager_test.dart.
+- **Privacy manifests:** ios/Runner/PrivacyInfo.xcprivacy (health + audio,
+  not linked, not tracking; UserDefaults + file-timestamp reason codes);
+  Play Data Safety answers + store listing copy under `store/`.
+- **App icon + splash:** programmatic pulse-wave-on-deep-night source
+  (`assets/branding/icon.png`) run through flutter_launcher_icons +
+  flutter_native_splash for both platforms (incl. Android 12).
+- **Accessibility:** Semantics labels on the score hero, hydration ring,
+  and each Pulse row (decorative waveforms ExcludeSemantics'd); the FAB
+  already carried its gesture label. Dynamic type works via default Text
+  scaling — no fixed-height text containers that would clip.
+- **Perf posture:** local-first optimistic updates mean every tap reflects
+  from local state immediately; the LLM round-trip is always detached.
+  Cold-start/tap budgets (§2) need on-device profiling once the toolchains
+  are installed.
+
+- **Verification gap (carried through all milestones):** the spec's "runs
+  on an iOS simulator and Android emulator" check cannot be met on this
+  machine — Xcode is only partially installed (needs App Store install +
+  `xcodebuild -runFirstLaunch` + CocoaPods) and there is no Android
+  SDK/AVD. Every milestone was instead verified with `flutter analyze`,
+  the full test suite, and a live release run on the web device (which
+  exercises the real Drift/Riverpod/router/UI stack). Rerun on both
+  simulators, plus TestFlight/Play internal builds, once the toolchains
+  are installed — this is the only outstanding item.
