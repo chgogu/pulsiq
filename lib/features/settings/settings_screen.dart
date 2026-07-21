@@ -1,15 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../auth/auth_service.dart';
 import '../../data/providers.dart';
+import '../../security/app_lock.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final auth = ref.watch(authStateProvider).value;
+    final lockEnabled = ref.watch(appLockEnabledProvider).value ?? true;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -19,6 +24,51 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
         children: [
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: Text(auth?.signedIn == true
+                  ? (auth!.displayName?.isNotEmpty == true
+                      ? auth.displayName!
+                      : auth.method.name)
+                  : 'Not signed in'),
+              subtitle: Text(auth?.method == AuthMethod.local
+                  ? 'Local profile — connect an account for encrypted backup'
+                  : 'Signed in with ${auth?.method.name ?? 'nothing yet'}'),
+              trailing: auth?.signedIn == true
+                  ? TextButton(
+                      onPressed: () async {
+                        await ref.read(authServiceProvider).signOut();
+                        if (context.mounted) context.go('/sign-in');
+                      },
+                      child: const Text('Sign out'),
+                    )
+                  : TextButton(
+                      onPressed: () => context.go('/sign-in'),
+                      child: const Text('Sign in'),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.fingerprint),
+              title: const Text('Biometric app lock'),
+              subtitle: Text(kIsWeb
+                  ? 'Available on iOS and Android'
+                  : 'Face ID / Touch ID / fingerprint gate on open'),
+              value: lockEnabled && !kIsWeb,
+              onChanged: kIsWeb
+                  ? null
+                  : (v) async {
+                      await ref
+                          .read(appDatabaseProvider)
+                          .setSetting(appLockSettingKey, v ? 'true' : 'false');
+                      ref.invalidate(appLockEnabledProvider);
+                    },
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             child: ListTile(
               leading: const Icon(Icons.shield_outlined),

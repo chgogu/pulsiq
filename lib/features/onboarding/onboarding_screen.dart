@@ -79,7 +79,7 @@ class OnboardingScreen extends ConsumerWidget {
                   await ref
                       .read(appDatabaseProvider)
                       .setSetting(onboardedSettingKey, 'true');
-                  if (context.mounted) context.go('/home');
+                  if (context.mounted) context.go('/sign-in');
                 },
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),

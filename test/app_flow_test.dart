@@ -48,6 +48,9 @@ Future<void> pumpToDashboard(WidgetTester tester) async {
   await pumpUntil(tester, find.text('Get started')); // async settings read
   await tester.tap(find.text('Get started'));
   await tester.pump(const Duration(milliseconds: 400));
+  await pumpUntil(tester, find.text('Continue without an account'));
+  await tester.tap(find.text('Continue without an account'));
+  await tester.pump(const Duration(milliseconds: 400));
   await pumpUntil(tester, find.text('PulsIQ Score')); // async write + route
   await tester.pump(const Duration(milliseconds: 400)); // transition done
 }
@@ -65,6 +68,14 @@ void main() {
 
     await tester.tap(find.text('Get started'));
     await tester.pump(const Duration(milliseconds: 400));
+    // No-password policy: onboarding hands off to sign-in (Google,
+    // passkey, or explicit local profile).
+    await pumpUntil(tester, find.text('Continue without an account'));
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Continue with a passkey'), findsOneWidget);
+
+    await tester.tap(find.text('Continue without an account'));
+    await tester.pump(const Duration(milliseconds: 400));
     await pumpUntil(tester, find.text('PulsIQ Score'));
     expect(find.text('PulsIQ Score'), findsOneWidget);
     expect(find.byKey(_fab), findsOneWidget);
@@ -76,6 +87,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
     await db.setSetting('onboarded', 'true');
+    await db.setSetting('auth_method', 'local');
     await tester.pumpWidget(ProviderScope(
       overrides: [appDatabaseProvider.overrideWithValue(db)],
       child: const PulsIQApp(),

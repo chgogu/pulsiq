@@ -27,11 +27,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _advance() async {
-    final onboarded = await ref
-        .read(appDatabaseProvider)
-        .getSetting(onboardedSettingKey);
+    final db = ref.read(appDatabaseProvider);
+    final onboarded = await db.getSetting(onboardedSettingKey);
+    final authMethod = await db.getSetting('auth_method');
     if (!mounted) return;
-    context.go(onboarded == 'true' ? '/home' : '/onboarding');
+    if (onboarded != 'true') {
+      context.go('/onboarding');
+    } else if (authMethod == null || authMethod == 'none') {
+      context.go('/sign-in');
+    } else {
+      context.go('/home');
+    }
   }
 
   @override

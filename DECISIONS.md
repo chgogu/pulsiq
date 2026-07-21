@@ -58,6 +58,37 @@ Non-negotiables from §0 are not re-litigated here.
   flutter_test's pending-timer guard. Test runs are slow on this machine —
   the darwin-x64 flutter_tester runs under Rosetta.
 
+## M3 — Auth & security (2026-07-21)
+
+- **Encryption at rest via SQLCipher selected at build time** — sqlite3 v3
+  uses build hooks, so the cipher is chosen in pubspec
+  (`hooks → user_defines → sqlite3 → source: sqlcipher`), no code-side
+  loader overrides. The old `sqlcipher_flutter_libs`/`sqlite3_flutter_libs`
+  packages are EOL stubs under v3 and were removed (drift_flutter too — the
+  connection is a plain `NativeDatabase` on an app-documents file now).
+  Per-device key: 32 random bytes in Keychain/Keystore via KeyVault →
+  `PRAGMA key`. Web preview stays unencrypted (plain sqlite3.wasm) — dev
+  vehicle only.
+- **CryptoService**: AES-256-GCM (package:cryptography), blob layout
+  base64(nonce|ciphertext|mac), separate data key from the same vault —
+  this is the client-side sealing layer for any future cloud backup
+  (zero-knowledge posture §4). Round-trip/tamper/wrong-key tests in
+  test/crypto_test.dart.
+- **Auth = Google / passkey / explicit local profile; no passwords.**
+  Google Sign-In code path is live but needs OAuth client IDs; passkeys
+  need the Supabase relying-party deployment (apple-app-site-association +
+  assetlinks.json on a real domain) — both are deployment config the repo
+  can't self-provide. "Continue without an account" keeps the app fully
+  functional offline; Settings offers sign-in/sign-out.
+- **Biometric app lock**: local_auth behind a LockGate above the router;
+  locks on cold start and after >60s backgrounded; enabled by default,
+  toggle in Settings; auto-skips where biometrics don't exist (web, CI) so
+  it can never lock the user out of a platform without sensors.
+  MainActivity switched to FlutterFragmentActivity; USE_BIOMETRIC +
+  NSFaceIDUsageDescription added.
+- **Auth events audited** (sign-in method, sign-out, unlocks) in the same
+  append-only table.
+
 - **Verification gap:** M1's "runs on iOS simulator + Android emulator"
   criterion cannot be met on this machine yet — Xcode is only partially
   installed (needs App Store install + `xcodebuild -runFirstLaunch`) and there

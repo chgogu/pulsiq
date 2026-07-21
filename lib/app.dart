@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/auth/sign_in_screen.dart';
+import 'features/lock/lock_gate.dart';
 import 'features/order_hack/order_hack_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/shell/pulsiq_shell.dart';
@@ -17,6 +19,7 @@ GoRouter buildRouter() => GoRouter(
           path: '/onboarding',
           builder: (_, _) => const OnboardingScreen(),
         ),
+        GoRoute(path: '/sign-in', builder: (_, _) => const SignInScreen()),
         ShellRoute(
           builder: (_, _, child) => PulsIQShell(child: child),
           routes: [
@@ -65,6 +68,8 @@ class _PulsIQAppState extends State<PulsIQApp> {
       darkTheme: pulsiqTheme(Brightness.dark),
       themeMode: ThemeMode.system,
       routerConfig: _router,
+      builder: (_, child) =>
+          LockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }

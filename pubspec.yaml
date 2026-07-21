@@ -37,11 +37,17 @@ dependencies:
   flutter_riverpod: ^3.3.2
   go_router: ^17.3.0
   drift: ^2.34.2
-  drift_flutter: ^0.3.1
   http: ^1.6.0
   flutter_local_notifications: ^22.1.0
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
+  cryptography: ^2.9.0
+  flutter_secure_storage: ^10.3.1
+  local_auth: ^3.0.2
+  google_sign_in: ^7.2.0
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  sqlite3: ^3.5.0
 
 dev_dependencies:
   flutter_test:
@@ -97,3 +103,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# SQLCipher instead of plain SQLite on all native platforms (§0: health
+# data encrypted at rest). Keyed per-device via KeyVault → PRAGMA key.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher
