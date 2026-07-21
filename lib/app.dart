@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/order_hack/order_hack_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'features/shell/pulsiq_shell.dart';
 import 'features/splash/splash_screen.dart';
 import 'theme/pulse_theme.dart';
@@ -23,6 +24,16 @@ GoRouter buildRouter() => GoRouter(
             GoRoute(
               path: '/order-hack',
               builder: (_, _) => const OrderHackScreen(),
+            ),
+            GoRoute(
+              path: '/settings',
+              builder: (_, _) => const SettingsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'privacy',
+                  builder: (_, _) => const PrivacyScreen(),
+                ),
+              ],
             ),
           ],
         ),

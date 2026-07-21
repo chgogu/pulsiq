@@ -1,27 +1,37 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/providers.dart';
 import '../../theme/pulse_theme.dart';
 import '../../widgets/pulse_wave.dart';
 
-class SplashScreen extends StatefulWidget {
+const onboardedSettingKey = 'onboarded';
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer(const Duration(milliseconds: 1800), () {
-      if (mounted) context.go('/onboarding');
-    });
+    _timer = Timer(const Duration(milliseconds: 1800), _advance);
+  }
+
+  Future<void> _advance() async {
+    final onboarded = await ref
+        .read(appDatabaseProvider)
+        .getSetting(onboardedSettingKey);
+    if (!mounted) return;
+    context.go(onboarded == 'true' ? '/home' : '/onboarding');
   }
 
   @override

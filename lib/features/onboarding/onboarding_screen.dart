@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/providers.dart';
 import '../../widgets/pulse_wave.dart';
+import '../splash/splash_screen.dart' show onboardedSettingKey;
 
-class OnboardingScreen extends StatelessWidget {
+class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
@@ -72,7 +75,12 @@ class OnboardingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               FilledButton(
-                onPressed: () => context.go('/home'),
+                onPressed: () async {
+                  await ref
+                      .read(appDatabaseProvider)
+                      .setSetting(onboardedSettingKey, 'true');
+                  if (context.mounted) context.go('/home');
+                },
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

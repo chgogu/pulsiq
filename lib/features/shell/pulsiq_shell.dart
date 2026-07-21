@@ -2,23 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/providers.dart';
 import '../../widgets/pulse_wave.dart';
 import '../../widgets/universal_fab.dart';
 
 /// Hosts every screen behind the universal FAB and the voice-recording
 /// overlay, so both persist across navigation (spec §2).
-class PulsIQShell extends StatefulWidget {
+class PulsIQShell extends ConsumerStatefulWidget {
   const PulsIQShell({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<PulsIQShell> createState() => _PulsIQShellState();
+  ConsumerState<PulsIQShell> createState() => _PulsIQShellState();
 }
 
-class _PulsIQShellState extends State<PulsIQShell> {
+class _PulsIQShellState extends ConsumerState<PulsIQShell> {
   static const _maxRecordSeconds = 60;
 
   bool _recording = false;
@@ -54,24 +56,30 @@ class _PulsIQShellState extends State<PulsIQShell> {
     _toast(const Text('Voice note captured — transcription lands in M4.'));
   }
 
-  void _quickWater(int oz) {
+  Future<void> _quickWater() async {
     HapticFeedback.lightImpact();
+    final repo = ref.read(logRepositoryProvider);
+    final id = await repo.quickAddWater(8);
+    if (!mounted) return;
     _toast(
       GestureDetector(
-        onLongPress: oz == 8 ? () => _quickWater(16) : null,
-        child: Row(
-          children: [
-            const Icon(Icons.water_drop_outlined, color: Colors.white70),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                oz == 8
-                    ? '+8 oz water logged · hold to make it 16 oz'
-                    : '+16 oz water logged',
-              ),
-            ),
-          ],
-        ),
+        onLongPress: () {
+          repo.upgradeWater(id, 16);
+          _toast(
+            const Row(children: [
+              Icon(Icons.water_drop_outlined, color: Colors.white70),
+              SizedBox(width: 10),
+              Expanded(child: Text('Upgraded — +16 oz water logged')),
+            ]),
+          );
+        },
+        child: const Row(children: [
+          Icon(Icons.water_drop_outlined, color: Colors.white70),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text('+8 oz water logged · hold to make it 16 oz'),
+          ),
+        ]),
       ),
     );
   }
@@ -95,7 +103,7 @@ class _PulsIQShellState extends State<PulsIQShell> {
         ],
       ),
       floatingActionButton: UniversalFab(
-        onQuickWater: () => _quickWater(8),
+        onQuickWater: _quickWater,
         onRecordStart: _startRecording,
         onRecordEnd: _stopRecording,
         onMenuScan: () {

@@ -2,12 +2,18 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../data/mock_data.dart';
-
 class HydrationCard extends StatelessWidget {
-  const HydrationCard({super.key, required this.hydration});
+  const HydrationCard({
+    super.key,
+    required this.consumedMl,
+    required this.targetMl,
+  });
 
-  final HydrationState hydration;
+  final int consumedMl;
+  final int targetMl;
+
+  double get _progress =>
+      targetMl == 0 ? 0 : (consumedMl / targetMl).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +28,13 @@ class HydrationCard extends StatelessWidget {
               height: 92,
               child: CustomPaint(
                 painter: _RingPainter(
-                  progress: hydration.progress,
+                  progress: _progress,
                   color: theme.colorScheme.primary,
                   track: theme.colorScheme.surfaceContainerHighest,
                 ),
                 child: Center(
                   child: Text(
-                    '${(hydration.progress * 100).round()}%',
+                    '${(_progress * 100).round()}%',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
@@ -47,14 +53,14 @@ class HydrationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${hydration.consumedMl} / ${hydration.targetMl} ml',
+                    '$consumedMl / $targetMl ml',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Dynamic target — weather and caffeine aware from M2. '
-                    'Tap the pulse button to add water.',
+                    'Target adapts to weather, movement, caffeine, and '
+                    'alcohol. Tap the pulse button to add water.',
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),

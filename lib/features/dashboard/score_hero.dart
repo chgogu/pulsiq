@@ -86,6 +86,7 @@ class ScoreHero extends StatelessWidget {
   void _showBreakdown(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (_) => _ScoreBreakdownSheet(result: result),
     );

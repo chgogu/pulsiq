@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/pulsiq_score.dart';
-
-/// M1 mock data. Drift-backed providers replace these in M2, and
-/// HealthKit/Health Connect feeds the biometrics in M5.
+/// Biometric mocks only — replaced by HealthKit/Health Connect in M5.
+/// Everything else on the dashboard is live from the local DB since M2.
 
 class BiometricDelta {
   const BiometricDelta({
@@ -27,43 +25,6 @@ class BiometricDelta {
 
   bool get improving => higherIsBetter ? delta >= 0 : delta <= 0;
 }
-
-class HydrationState {
-  const HydrationState({required this.consumedMl, required this.targetMl});
-
-  final int consumedMl;
-  final int targetMl;
-
-  double get progress => (consumedMl / targetMl).clamp(0.0, 1.0);
-}
-
-enum LogKind { food, beverage, hydration, exercise }
-
-class LogEntry {
-  const LogEntry({
-    required this.kind,
-    required this.time,
-    required this.title,
-    required this.detail,
-  });
-
-  final LogKind kind;
-  final String time;
-  final String title;
-  final String detail;
-}
-
-final scoreInputProvider = Provider(
-  (_) => const PulsIQScoreInput(
-    cardiacRecovery: 0.82,
-    sleepQuality: 0.76,
-    fuelQuality: 0.64,
-    hydrationProgress: 0.47,
-  ),
-);
-
-final scoreResultProvider =
-    Provider((ref) => computePulsIQScore(ref.watch(scoreInputProvider)));
 
 final biometricsProvider = Provider(
   (_) => const [
@@ -100,38 +61,6 @@ final biometricsProvider = Provider(
       deltaText: '3 over baseline',
       insight: 'More of last night went to actual sleep.',
       icon: Icons.bedtime_outlined,
-    ),
-  ],
-);
-
-final hydrationProvider =
-    Provider((_) => const HydrationState(consumedMl: 1150, targetMl: 2450));
-
-final logFeedProvider = Provider(
-  (_) => const [
-    LogEntry(
-      kind: LogKind.exercise,
-      time: '4:10 PM',
-      title: 'Zone-2 walk',
-      detail: '25 min · moderate',
-    ),
-    LogEntry(
-      kind: LogKind.hydration,
-      time: '2:35 PM',
-      title: 'Water',
-      detail: '+475 ml',
-    ),
-    LogEntry(
-      kind: LogKind.food,
-      time: '12:40 PM',
-      title: 'Chicken burrito bowl',
-      detail: 'clean fuel · steady energy',
-    ),
-    LogEntry(
-      kind: LogKind.beverage,
-      time: '8:05 AM',
-      title: 'Oat-milk latte',
-      detail: 'caffeine · 9 g sugar',
     ),
   ],
 );

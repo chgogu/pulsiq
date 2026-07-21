@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/mock_data.dart';
+import '../../data/providers.dart';
+import '../logging/entry_sheet.dart';
 import 'hydration_card.dart';
 import 'log_tile.dart';
 import 'pulse_card.dart';
@@ -15,8 +18,9 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final score = ref.watch(scoreResultProvider);
     final biometrics = ref.watch(biometricsProvider);
-    final hydration = ref.watch(hydrationProvider);
-    final log = ref.watch(logFeedProvider);
+    final consumedMl = ref.watch(todayHydrationMlProvider).value ?? 0;
+    final targetMl = ref.watch(hydrationTargetProvider);
+    final feed = ref.watch(logFeedProvider);
 
     return SafeArea(
       child: ListView(
@@ -35,18 +39,57 @@ class DashboardScreen extends ConsumerWidget {
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
+              IconButton(
+                tooltip: 'Settings',
+                onPressed: () => context.push('/settings'),
+                icon: const Icon(Icons.settings_outlined, size: 20),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           ScoreHero(result: score),
           const SizedBox(height: 16),
           PulseCard(biometrics: biometrics),
           const SizedBox(height: 16),
-          HydrationCard(hydration: hydration),
+          HydrationCard(consumedMl: consumedMl, targetMl: targetMl),
           const SizedBox(height: 24),
-          Text("Today's log", style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          for (final entry in log) LogTile(entry: entry),
+          Row(
+            children: [
+              Text("Today's log", style: theme.textTheme.titleMedium),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => showEntrySheet(context),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          switch (feed) {
+            AsyncData(value: final items) when items.isEmpty => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'Nothing logged yet today. Tap the pulse button for '
+                  'water, or Add for anything else.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            AsyncData(value: final items) => Column(
+                children: [for (final item in items) LogTile(item: item)],
+              ),
+            AsyncError() => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text("Couldn't load today's log.",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium),
+              ),
+            _ => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+          },
         ],
       ),
     );
