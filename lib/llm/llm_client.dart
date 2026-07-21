@@ -46,15 +46,16 @@ class ProxyBackend implements LlmBackend {
     required String base64Image,
     String hint = '',
   }) async {
-    // Proxy runs the latest Claude vision model (Opus 4.8) server-side; the
-    // app never holds the key (spec §0).
+    // Proxy runs Gemini vision server-side; the app never holds the key
+    // (spec §0). Generous timeout: the proxy retries transient transport
+    // failures internally, and a cold Wi-Fi radio can add seconds on top.
     final res = await _client
         .post(
           Uri.parse('$baseUrl/v1/meal-vision'),
           headers: {'content-type': 'application/json'},
           body: jsonEncode({'image': base64Image, 'hint': hint}),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(const Duration(seconds: 75));
     if (res.statusCode != 200) {
       throw http.ClientException('proxy ${res.statusCode}');
     }

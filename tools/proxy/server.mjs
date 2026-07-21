@@ -178,25 +178,47 @@ function mediaTypeOf(b64) {
   return 'image/jpeg';
 }
 
-async function generate({ parts, schema }) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [{ role: 'user', parts }],
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      responseMimeType: 'application/json',
-      responseSchema: schema,
-    },
-  });
-  return response.text;
+// Transient transport failures to the Gemini endpoint ("fetch failed") are
+// retried — a single dropped socket shouldn't cost the user their photo.
+async function generate({ parts, schema, attempts = 3 }) {
+  let lastErr;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: MODEL,
+        contents: [{ role: 'user', parts }],
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: 'application/json',
+          responseSchema: schema,
+        },
+      });
+      if (i > 1) console.log(`  (succeeded on attempt ${i})`);
+      return response.text;
+    } catch (err) {
+      lastErr = err;
+      const cause = err?.cause;
+      console.warn(
+        `  attempt ${i}/${attempts} failed: ${err?.message ?? err}` +
+          (cause ? ` | cause: ${cause.code ?? ''} ${cause.message ?? ''}` : ''),
+      );
+      if (i < attempts) await new Promise((r) => setTimeout(r, 1200 * i));
+    }
+  }
+  throw lastErr;
 }
 
 async function mealVision({ image, hint }) {
   const parts = [];
   if (image) {
-    parts.push({
-      inlineData: { mimeType: mediaTypeOf(image), data: image },
-    });
+    const mimeType = mediaTypeOf(image);
+    console.log(
+      `  image: ${(image.length / 1024 / 1024).toFixed(2)} MB base64, ` +
+        `${mimeType}${hint ? `, hint="${hint}"` : ''}`,
+    );
+    parts.push({ inlineData: { mimeType, data: image } });
+  } else {
+    console.log(`  no image${hint ? `, hint="${hint}"` : ''}`);
   }
   parts.push({
     text:
@@ -267,7 +289,13 @@ createServer((req, res) => {
       console.log(`${req.url} ok in ${Date.now() - started}ms`);
       send(200, { reply });
     } catch (err) {
-      console.error(`${req.url} FAILED:`, err?.message ?? err);
+      // `fetch failed` hides the real reason in .cause — surface it.
+      const cause = err?.cause;
+      console.error(
+        `${req.url} FAILED after ${Date.now() - started}ms:`,
+        err?.message ?? err,
+        cause ? `| cause: ${cause.code ?? ''} ${cause.message ?? cause}` : '',
+      );
       send(502, { error: String(err?.message ?? err) });
     }
   });
