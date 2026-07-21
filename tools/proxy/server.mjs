@@ -109,8 +109,18 @@ const COACH_SCHEMA = {
                 type: 'STRING',
                 enum: ['clean', 'moderate', 'dense'],
               },
+              // Required so a spoken log feeds the same fuel analytics a
+              // photographed one does.
+              calories: { type: 'NUMBER' },
+              protein_g: { type: 'NUMBER' },
+              fiber_g: { type: 'NUMBER' },
+              carbs_g: { type: 'NUMBER' },
+              fat_g: { type: 'NUMBER' },
             },
-            required: ['name', 'quantity', 'quality_score'],
+            required: [
+              'name', 'quantity', 'quality_score', 'calories',
+              'protein_g', 'fiber_g', 'carbs_g', 'fat_g',
+            ],
           },
         },
         beverages: {
@@ -237,7 +247,10 @@ async function coach({ text }) {
       {
         text:
           'Parse this voice log into the structured JSON contract and write ' +
-          `a short, energy-framed coaching message.\n\n${text}`,
+          'a short, energy-framed coaching message. Estimate realistic ' +
+          'nutrition for every food item from typical portions — the app ' +
+          'adds these into the day\'s totals, so give usable numbers rather ' +
+          `than zeros.\n\n${text}`,
       },
     ],
     schema: COACH_SCHEMA,

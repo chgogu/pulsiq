@@ -165,6 +165,22 @@ class MockLlmBackend implements LlmBackend {
       }
     }
 
+    // Attach macros from the same keyword table the photo mock uses, so an
+    // offline voice log still feeds the day's fuel totals instead of landing
+    // as a nameless row worth zero calories.
+    for (final food in foods) {
+      final est = _estimateMeal(food['name'] as String).first;
+      for (final key in const [
+        'calories',
+        'protein_g',
+        'fiber_g',
+        'carbs_g',
+        'fat_g',
+      ]) {
+        food[key] = est[key];
+      }
+    }
+
     final minutes =
         RegExp(r'(\d+)\s*(?:min|minute)').firstMatch(text)?.group(1);
     final move =

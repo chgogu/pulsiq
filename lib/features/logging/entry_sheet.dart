@@ -1,3 +1,6 @@
+// `show Value` only — drift's top-level Column/Table would collide with
+// Flutter's.
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,6 +40,8 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
 
   final _name = TextEditingController();
   final _quantity = TextEditingController();
+  final _calories = TextEditingController();
+  final _protein = TextEditingController();
   final _volume = TextEditingController();
   final _sugar = TextEditingController();
   final _amount = TextEditingController(text: '250');
@@ -57,6 +62,8 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
         _name.text = e.name;
         _quantity.text = e.quantity;
         _quality = e.qualityScore;
+        _calories.text = e.caloriesKcal?.toString() ?? '';
+        _protein.text = e.proteinG?.round().toString() ?? '';
       case BeverageEntry():
         _name.text = e.name;
         _volume.text = '${e.volumeMl}';
@@ -74,7 +81,8 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   @override
   void dispose() {
     for (final c in [
-      _name, _quantity, _volume, _sugar, _amount, _activity, _minutes,
+      _name, _quantity, _calories, _protein, _volume, _sugar, _amount,
+      _activity, _minutes,
     ]) {
       c.dispose();
     }
@@ -99,6 +107,8 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
             name: _name.text.trim(),
             quantity: _quantity.text.trim(),
             quality: _quality,
+            caloriesKcal: int.tryParse(_calories.text.trim()),
+            proteinG: double.tryParse(_protein.text.trim()),
           );
         case LogKind.beverage:
           final sugar = double.tryParse(_sugar.text) ?? 0;
@@ -128,6 +138,8 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
             name: _name.text.trim(),
             quantity: _quantity.text.trim(),
             qualityScore: _quality,
+            caloriesKcal: Value(int.tryParse(_calories.text.trim())),
+            proteinG: Value(double.tryParse(_protein.text.trim())),
           ));
         case final BeverageEntry e:
           await repo.updateBeverage(e.copyWith(
@@ -235,6 +247,31 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
             controller: _quantity,
             decoration:
                 const InputDecoration(labelText: 'Quantity (optional)'),
+          ),
+          const SizedBox(height: 12),
+          // Optional, because a hand-typed entry shouldn't demand numbers the
+          // user doesn't have — but without them the entry can't reach the
+          // fuel totals, so they're offered rather than hidden.
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _calories,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'Calories', hintText: 'optional'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _protein,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'Protein (g)', hintText: 'optional'),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           SegmentedButton<FuelQuality>(

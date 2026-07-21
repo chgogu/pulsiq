@@ -6,6 +6,7 @@ import '../../data/providers.dart';
 import '../../data/score_providers.dart';
 import '../nutrition/cut_down_card.dart';
 import '../nutrition/fuel_card.dart';
+import '../nutrition/insights_card.dart';
 import '../walk/walk_timer_card.dart';
 import '../logging/entry_sheet.dart';
 import 'evening_forecast_card.dart';
@@ -14,6 +15,7 @@ import 'log_tile.dart';
 import 'morning_reset_card.dart';
 import 'pulse_card.dart';
 import 'score_hero.dart';
+import 'spark_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -54,14 +56,20 @@ class DashboardScreen extends ConsumerWidget {
           const MorningResetCard(),
           ScoreHero(result: score),
           const SizedBox(height: 16),
+          // Fuel and its interpretation sit directly under the score: this is
+          // the food data the user came to see, and burying it under the
+          // forecast/walk cards meant it never made it above the fold.
+          const FuelCard(),
+          const InsightsCard(),
+          const CutDownCard(),
+          HydrationCard(consumedMl: consumedMl, targetMl: targetMl),
+          const SizedBox(height: 16),
           const WalkTimerCard(),
           const EveningForecastCard(),
           const PulseCard(),
           const SizedBox(height: 16),
-          const CutDownCard(),
-          const FuelCard(),
-          HydrationCard(consumedMl: consumedMl, targetMl: targetMl),
-          const SizedBox(height: 24),
+          const SparkCard(),
+          const SizedBox(height: 8),
           Row(
             children: [
               Text("Today's log", style: theme.textTheme.titleMedium),

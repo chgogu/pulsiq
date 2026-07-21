@@ -10,11 +10,27 @@ class FoodItem {
     required this.name,
     required this.quantity,
     required this.qualityScore,
+    this.caloriesKcal,
+    this.proteinG,
+    this.fiberG,
+    this.carbsG,
+    this.fatG,
   });
 
   final String name;
   final String quantity;
   final String qualityScore; // clean | moderate | dense
+
+  /// Macros are optional so an older backend (or a model that declines to
+  /// guess) still parses. Absent macros mean the entry is logged but can't
+  /// contribute to the day's fuel totals.
+  final int? caloriesKcal;
+  final double? proteinG;
+  final double? fiberG;
+  final double? carbsG;
+  final double? fatG;
+
+  bool get hasMacros => caloriesKcal != null;
 
   static const _qualities = {'clean', 'moderate', 'dense'};
 
@@ -27,8 +43,24 @@ class FoodItem {
       name: _string(json, 'name'),
       quantity: json['quantity'] is String ? json['quantity'] as String : '',
       qualityScore: quality,
+      caloriesKcal: _optionalNum(json, 'calories')?.round(),
+      proteinG: _optionalNum(json, 'protein_g'),
+      fiberG: _optionalNum(json, 'fiber_g'),
+      carbsG: _optionalNum(json, 'carbs_g'),
+      fatG: _optionalNum(json, 'fat_g'),
     );
   }
+}
+
+/// Reads a non-negative number, or null when the field is missing or junk.
+/// Negative values are rejected rather than clamped — a negative macro means
+/// the model misunderstood, and silently storing 0 would hide that.
+double? _optionalNum(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! num) return null;
+  final d = value.toDouble();
+  if (d.isNaN || d.isInfinite || d < 0) return null;
+  return d;
 }
 
 class BeverageItem {

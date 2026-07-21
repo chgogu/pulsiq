@@ -157,6 +157,12 @@ class VoicePipeline extends Notifier<VoiceState> {
         name: food.name,
         quantity: food.quantity,
         quality: FuelQuality.values.byName(food.qualityScore),
+        caloriesKcal: food.caloriesKcal,
+        proteinG: food.proteinG,
+        fiberG: food.fiberG,
+        carbsG: food.carbsG,
+        fatG: food.fatG,
+        source: 'voice',
       );
     }
     var caffeineLogged = false;
