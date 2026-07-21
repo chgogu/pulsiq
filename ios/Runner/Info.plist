@@ -6,6 +6,10 @@
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
 	<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>PulsIQ uses the camera to scan menus and hand you the top energy-optimized picks.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PulsIQ reads menu photos from your library to suggest steady-energy picks.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

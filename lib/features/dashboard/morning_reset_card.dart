@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers.dart';
 import '../../health/health_providers.dart';
+import '../walk/walk_controller.dart';
 
 final _resetDoneProvider = FutureProvider<bool>((ref) async {
   final now = DateTime.now();
@@ -83,8 +84,8 @@ class MorningResetCard extends ConsumerWidget {
                 actionLabel: 'Start walk',
                 onTap: () async {
                   await ref
-                      .read(logRepositoryProvider)
-                      .startWalk(targetMinutes: 10, source: 'morning_reset');
+                      .read(walkControllerProvider.notifier)
+                      .start(targetMinutes: 10, source: 'morning_reset');
                   await _markDone(ref);
                 },
               ),

@@ -43,9 +43,9 @@ final hydrationTargetProvider = Provider<int>((ref) {
       boost;
 });
 
-final _todayFoodsProvider = StreamProvider(
+final todayFoodsProvider = StreamProvider(
     (ref) => ref.watch(appDatabaseProvider).watchTodayFoods());
-final _todayBeveragesProvider = StreamProvider(
+final todayBeveragesProvider = StreamProvider(
     (ref) => ref.watch(appDatabaseProvider).watchTodayBeverages());
 final _todayHydrationProvider = StreamProvider(
     (ref) => ref.watch(appDatabaseProvider).watchTodayHydration());
@@ -53,8 +53,8 @@ final _todayExerciseProvider = StreamProvider(
     (ref) => ref.watch(appDatabaseProvider).watchTodayExercise());
 
 final logFeedProvider = Provider<AsyncValue<List<LogItem>>>((ref) {
-  final foods = ref.watch(_todayFoodsProvider);
-  final beverages = ref.watch(_todayBeveragesProvider);
+  final foods = ref.watch(todayFoodsProvider);
+  final beverages = ref.watch(todayBeveragesProvider);
   final hydration = ref.watch(_todayHydrationProvider);
   final exercise = ref.watch(_todayExerciseProvider);
   for (final v in [foods, beverages, hydration, exercise]) {
@@ -76,7 +76,7 @@ final auditTrailProvider = StreamProvider(
 /// Fuel quality from today's food logs: clean=1.0, moderate=0.6, dense=0.25,
 /// averaged. Null (component absent) until something is logged.
 final fuelQualityProvider = Provider<double?>((ref) {
-  final foods = ref.watch(_todayFoodsProvider).value;
+  final foods = ref.watch(todayFoodsProvider).value;
   if (foods == null || foods.isEmpty) return null;
   const scores = {
     FuelQuality.clean: 1.0,

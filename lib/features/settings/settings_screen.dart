@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/auth_service.dart';
+import '../../data/forecast_providers.dart';
 import '../../data/providers.dart';
 import '../../health/health_providers.dart';
 import '../../security/app_lock.dart';
@@ -83,6 +84,17 @@ class SettingsScreen extends ConsumerWidget {
                     .setSetting(demoHealthSettingKey, v ? 'true' : 'false');
                 ref.invalidate(demoHealthEnabledProvider);
               },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.nightlight_round),
+              title: const Text('Preview evening forecast'),
+              subtitle: const Text('Show tonight\'s forecast card any time'),
+              value: ref.watch(forceForecastProvider),
+              onChanged: (v) =>
+                  ref.read(forceForecastProvider.notifier).state = v,
             ),
           ),
           const SizedBox(height: 12),

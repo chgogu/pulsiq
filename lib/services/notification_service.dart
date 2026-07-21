@@ -41,6 +41,44 @@ class NotificationService {
     return true;
   }
 
+  static const walkActivityId = 7001;
+
+  /// Ongoing walk-timer notification. On Android this is the
+  /// foreground-service-style ongoing notification; on iOS it stands in for
+  /// the Live Activity (spec §3 — a full ActivityKit widget is native work
+  /// beyond the Flutter layer).
+  Future<void> showWalkActivity({
+    required String body,
+    required int progressMax,
+    required int progress,
+  }) async {
+    if (!await _ensureInitialized()) return;
+    await _plugin.show(
+      id: walkActivityId,
+      title: 'Post-meal walk',
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          'walks',
+          'Walk timer',
+          channelDescription: 'Active post-meal walk',
+          ongoing: true,
+          onlyAlertOnce: true,
+          showProgress: true,
+          maxProgress: progressMax,
+          progress: progress,
+          category: AndroidNotificationCategory.progress,
+        ),
+        iOS: const DarwinNotificationDetails(presentSound: false),
+      ),
+    );
+  }
+
+  Future<void> clearWalkActivity() async {
+    if (kIsWeb) return;
+    await _plugin.cancel(id: walkActivityId);
+  }
+
   Future<void> scheduleAt({
     required int id,
     required DateTime at,

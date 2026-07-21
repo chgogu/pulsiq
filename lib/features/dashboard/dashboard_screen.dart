@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
 import '../../data/score_providers.dart';
+import '../walk/walk_timer_card.dart';
 import '../logging/entry_sheet.dart';
+import 'evening_forecast_card.dart';
 import 'hydration_card.dart';
 import 'log_tile.dart';
 import 'morning_reset_card.dart';
@@ -50,6 +52,8 @@ class DashboardScreen extends ConsumerWidget {
           const MorningResetCard(),
           ScoreHero(result: score),
           const SizedBox(height: 16),
+          const WalkTimerCard(),
+          const EveningForecastCard(),
           const PulseCard(),
           const SizedBox(height: 16),
           HydrationCard(consumedMl: consumedMl, targetMl: targetMl),

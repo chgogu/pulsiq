@@ -10,6 +10,9 @@ import '../domain/llm_contract.dart';
 abstract interface class LlmBackend {
   String get name;
   Future<String> complete(String userText);
+
+  /// Menu OCR text → top-3 energy-optimized picks (Order Hack, §3).
+  Future<String> analyzeMenu(String menuText);
 }
 
 class ProxyBackend implements LlmBackend {
@@ -27,12 +30,18 @@ class ProxyBackend implements LlmBackend {
   String get name => model;
 
   @override
-  Future<String> complete(String userText) async {
+  Future<String> complete(String userText) => _post('/v1/coach', userText);
+
+  @override
+  Future<String> analyzeMenu(String menuText) =>
+      _post('/v1/order-hack', menuText);
+
+  Future<String> _post(String path, String text) async {
     final res = await _client
         .post(
-          Uri.parse('$baseUrl/v1/coach'),
+          Uri.parse('$baseUrl$path'),
           headers: {'content-type': 'application/json'},
-          body: jsonEncode({'model': model, 'text': userText}),
+          body: jsonEncode({'model': model, 'text': text}),
         )
         .timeout(const Duration(seconds: 20));
     if (res.statusCode != 200) {
@@ -166,6 +175,74 @@ class MockLlmBackend implements LlmBackend {
     };
     return jsonEncode(reply);
   }
+
+  @override
+  Future<String> analyzeMenu(String menuText) async {
+    // Rank menu lines: clean/lean keywords steady, fried/sweet spike.
+    final lines = menuText
+        .split(RegExp(r'[\n,;]'))
+        .map((l) => l.trim())
+        .where((l) => l.length > 2)
+        .toList();
+    final spike = RegExp(
+        r'fried|crispy|breaded|pasta|fries|burger|pizza|syrup|sweet|'
+        r'candied|glazed|soda|shake|donut|cake|sugary',
+        caseSensitive: false);
+    final steady = RegExp(
+        r'grilled|salad|greens|salmon|chicken|eggs|avocado|quinoa|beans|'
+        r'veg|bowl|steamed|roasted|tofu|lentil|fish',
+        caseSensitive: false);
+
+    ({String name, String why, String rating}) score(String line) {
+      final s = spike.hasMatch(line);
+      final c = steady.hasMatch(line);
+      if (c && !s) {
+        return (
+          name: line,
+          why: 'Lean protein and fiber here mean long, steady energy — no '
+              'afternoon crash.',
+          rating: 'steady',
+        );
+      }
+      if (c && s) {
+        return (
+          name: line,
+          why: 'Solid base — ask for it grilled, not fried, to keep the '
+              'energy flat.',
+          rating: 'moderate',
+        );
+      }
+      return (
+        name: line,
+        why: 'Tasty but carb-dense — pair it with water and a short walk '
+            'after.',
+        rating: 'spike',
+      );
+    }
+
+    final ranked = lines.map(score).toList()
+      ..sort((a, b) {
+        int rank(String r) =>
+            r == 'steady' ? 0 : (r == 'moderate' ? 1 : 2);
+        return rank(a.rating).compareTo(rank(b.rating));
+      });
+    final top = ranked.take(3).toList();
+    if (top.isEmpty) {
+      top.add((
+        name: 'Grilled protein + greens',
+        why: 'When in doubt, lean protein and vegetables keep your energy '
+            'steady.',
+        rating: 'steady',
+      ));
+    }
+    return jsonEncode({
+      'headline': 'Top picks for long, steady energy',
+      'top_picks': [
+        for (final p in top)
+          {'name': p.name, 'why': p.why, 'energy_rating': p.rating},
+      ],
+    });
+  }
 }
 
 class CoachOutcome {
@@ -209,5 +286,18 @@ class LlmCoach {
     }
     return CoachOutcome(
         reply: null, backendUsed: 'none', rawText: transcript);
+  }
+
+  /// Order Hack: primary → fallback, returning raw JSON for the caller to
+  /// parse, or null when both backends fail.
+  Future<String?> orderHack(String menuText) async {
+    for (final backend in [primary, fallback]) {
+      try {
+        return await backend.analyzeMenu(menuText);
+      } catch (_) {
+        continue;
+      }
+    }
+    return null;
   }
 }

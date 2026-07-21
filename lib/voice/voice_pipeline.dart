@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/db/app_database.dart';
 import '../data/providers.dart';
 import '../domain/llm_contract.dart';
+import '../domain/sweetness.dart';
 import '../health/health_providers.dart';
 import '../llm/llm_client.dart';
 import '../services/notification_service.dart';
@@ -15,6 +16,7 @@ class VoiceState {
     this.phase = VoicePhase.idle,
     this.transcript = '',
     this.coachingMessage,
+    this.walkOfferMinutes,
   });
 
   final VoicePhase phase;
@@ -23,10 +25,14 @@ class VoiceState {
   /// One-shot: the shell shows it as a toast, then calls [VoicePipeline.consumeMessage].
   final String? coachingMessage;
 
+  /// When set, the shell offers a post-meal walk of this length (spec §3).
+  final int? walkOfferMinutes;
+
   VoiceState copyWith({
     VoicePhase? phase,
     String? transcript,
     String? coachingMessage,
+    int? walkOfferMinutes,
     bool clearMessage = false,
   }) {
     return VoiceState(
@@ -34,6 +40,8 @@ class VoiceState {
       transcript: transcript ?? this.transcript,
       coachingMessage:
           clearMessage ? null : coachingMessage ?? this.coachingMessage,
+      walkOfferMinutes:
+          clearMessage ? null : walkOfferMinutes ?? this.walkOfferMinutes,
     );
   }
 }
@@ -101,12 +109,33 @@ class VoicePipeline extends Notifier<VoiceState> {
     } else {
       await _applyReply(reply);
       message = reply.coachingMessage;
+      // Sweetness adjuster (spec §5): dilution hack for any sweet drink.
+      for (final bev in reply.logSummary.beverages) {
+        final hack = sweetnessHack(bev.name, bev.sugarContentG);
+        if (hack != null) {
+          message = '$message\n$hack';
+          break;
+        }
+      }
       // Correlation note (spec §3/§5): cite the strongest biometric signal.
       final note = ref.read(correlationNoteProvider);
       if (note != null) message = '$message\n$note';
     }
+    // Post-carb movement nudge (spec §3).
+    final impact = reply?.energyImpact;
+    final offerWalk = impact != null &&
+        (impact.glycemicLoadEstimate == 'high_spike' ||
+            impact.postMealActionRequired);
     state = state.copyWith(
-        phase: VoicePhase.idle, transcript: '', coachingMessage: message);
+      phase: VoicePhase.idle,
+      transcript: '',
+      coachingMessage: message,
+      walkOfferMinutes: offerWalk
+          ? (impact.recommendedWalkMinutes > 0
+              ? impact.recommendedWalkMinutes
+              : 12)
+          : null,
+    );
   }
 
   /// Contract beverages carry no volume; hydration arrives separately in

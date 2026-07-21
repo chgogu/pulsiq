@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/db/app_database.dart';
 import '../../data/log_repository.dart';
 import '../../data/providers.dart';
+import '../../domain/sweetness.dart';
 import '../../services/notification_service.dart';
 
 Future<void> showEntrySheet(BuildContext context, {LogItem? existing}) {
@@ -44,6 +45,7 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   FuelQuality _quality = FuelQuality.clean;
   BeverageType _beverageType = BeverageType.water;
   ExerciseIntensity _intensity = ExerciseIntensity.moderate;
+  String? _sweetnessHack;
 
   @override
   void initState() {
@@ -98,15 +100,17 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
             quality: _quality,
           );
         case LogKind.beverage:
+          final sugar = double.tryParse(_sugar.text) ?? 0;
           await repo.addBeverage(
             name: _name.text.trim(),
             volumeMl: int.tryParse(_volume.text) ?? 0,
-            sugarContentG: double.tryParse(_sugar.text) ?? 0,
+            sugarContentG: sugar,
             type: _beverageType,
           );
           if (_beverageType == BeverageType.caffeine) {
             await ref.read(reminderSchedulerProvider).onCaffeineLogged();
           }
+          _sweetnessHack = sweetnessHack(_name.text.trim(), sugar);
         case LogKind.hydration:
           await repo.addHydration(amountMl: int.parse(_amount.text));
         case LogKind.exercise:
@@ -142,7 +146,15 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
           ));
       }
     }
-    if (mounted) Navigator.of(context).maybePop();
+    if (!mounted) return;
+    final hack = _sweetnessHack;
+    Navigator.of(context).maybePop();
+    if (hack != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+            content: Text(hack), duration: const Duration(seconds: 5)));
+    }
   }
 
   @override

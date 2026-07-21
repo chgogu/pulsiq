@@ -171,6 +171,27 @@ class AppDatabase extends _$AppDatabase {
     return q.watchSingle().map((row) => row.read(sum) ?? 0);
   }
 
+  Future<void> markWalkComplete(int id) async {
+    await (update(walkSessions)..where((t) => t.id.equals(id)))
+        .write(WalkSessionsCompanion(completedAt: Value(DateTime.now())));
+    await logAudit(
+      action: 'write',
+      dataType: 'walk',
+      source: 'walk_timer',
+      purpose: 'completed',
+    );
+  }
+
+  /// Completed walk minutes today — folded into active minutes for the
+  /// hydration target and PulsIQ Score.
+  Future<int> completedWalkMinutesToday() async {
+    final rows = await (select(walkSessions)
+          ..where((t) => t.completedAt.isNotNull() &
+              t.startedAt.isBiggerOrEqualValue(startOfToday())))
+        .get();
+    return rows.fold<int>(0, (sum, w) => sum + w.targetMinutes);
+  }
+
   /// (caffeineMl, alcoholMl) logged today — offsets the hydration target 1:1.
   Stream<(int, int)> watchTodayDiureticMl() {
     final sum = beverageEntries.volumeMl.sum();

@@ -33,6 +33,9 @@ class ScriptedBackend implements LlmBackend {
     if (replies.isEmpty) throw Exception('backend down');
     return replies.removeAt(0);
   }
+
+  @override
+  Future<String> analyzeMenu(String menuText) => complete(menuText);
 }
 
 void main() {

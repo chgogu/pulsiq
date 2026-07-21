@@ -178,7 +178,7 @@ void main() {
     await tester.drag(find.byKey(_fab), const Offset(0, -80));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Order Hack lens'), findsOneWidget);
+    expect(find.text('Point it at a menu'), findsOneWidget);
     expect(find.byKey(_fab), findsOneWidget);
     await disposeApp(tester);
   });

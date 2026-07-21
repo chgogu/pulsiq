@@ -37,6 +37,10 @@ class DeadBackend implements LlmBackend {
   @override
   Future<String> complete(String userText) async =>
       throw Exception('offline');
+
+  @override
+  Future<String> analyzeMenu(String menuText) async =>
+      throw Exception('offline');
 }
 
 Future<void> _settle() =>

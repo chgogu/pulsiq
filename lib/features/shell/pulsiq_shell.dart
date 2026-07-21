@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import '../../voice/voice_pipeline.dart';
 import '../../widgets/pulse_wave.dart';
 import '../../widgets/universal_fab.dart';
+import '../walk/walk_controller.dart';
 
 /// Hosts every screen behind the universal FAB and the voice-recording
 /// overlay, so both persist across navigation (spec §2).
@@ -96,11 +97,26 @@ class _PulsIQShellState extends ConsumerState<PulsIQShell> {
 
   @override
   Widget build(BuildContext context) {
-    // Coaching messages arrive whenever the detached LLM round-trip lands.
+    // Coaching messages arrive whenever the detached LLM round-trip lands;
+    // a post-carb result also offers a walk timer (spec §3).
     ref.listen(voicePipelineProvider, (previous, next) {
       final message = next.coachingMessage;
       if (message != null && message != previous?.coachingMessage) {
-        _toast(Text(message));
+        final walkMinutes = next.walkOfferMinutes;
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(SnackBar(
+          content: Text(message),
+          duration: Duration(seconds: walkMinutes != null ? 6 : 3),
+          action: walkMinutes != null
+              ? SnackBarAction(
+                  label: 'Start $walkMinutes-min walk',
+                  onPressed: () => ref
+                      .read(walkControllerProvider.notifier)
+                      .start(targetMinutes: walkMinutes, source: 'post_carb'),
+                )
+              : null,
+        ));
         ref.read(voicePipelineProvider.notifier).consumeMessage();
       }
     });

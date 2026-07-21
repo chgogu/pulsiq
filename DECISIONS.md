@@ -142,6 +142,30 @@ Non-negotiables from §0 are not re-litigated here.
   project; Health Connect read permissions + permission-usage
   activity-alias in the Android manifest.
 
+## M6 — Signature features (2026-07-21)
+
+- **Order Hack:** camera/gallery via image_picker → on-device ML Kit OCR
+  (native only, conditional import; web offers manual menu-text paste) →
+  LLM `analyzeMenu` (separate proxy endpoint, own contract validator) →
+  top-3 cards with a one-line why + steady/moderate/spike rating. Mock
+  backend ranks menu lines by lean/fried keywords until the proxy deploys.
+- **Post-carb walk timer:** when a voice log returns high_spike or
+  post_meal_action_required, the coach snackbar carries a "Start N-min
+  walk" action; the WalkController runs an in-app timer card plus an
+  ongoing notification (Android foreground-service style / iOS Live
+  Activity stand-in — a full ActivityKit widget is native work past the
+  Flutter layer). Completing marks the WalkSessions row done and folds its
+  minutes into today's active minutes → PulsIQ Score.
+- **Evening forecast:** pure engine scores positive/negative signals
+  (HRV/RHR deltas, movement, dense fuel, late caffeine) and cites the
+  strongest one; card shows from 7pm (Settings toggle forces it for
+  preview). Same signal precedence as the correlation notes.
+- **Sweetness adjuster:** >15 g sugar (or user-flagged) → dilution hack,
+  appended to voice-coach messages and shown as a snackbar on manual
+  beverage logging.
+- **PulsIQ Score v1** completed in M5 (baseline-driven cardiac + fuel-only
+  renormalization); M6 adds completed-walk minutes as an input.
+
 - **Verification gap:** M1's "runs on iOS simulator + Android emulator"
   criterion cannot be met on this machine yet — Xcode is only partially
   installed (needs App Store install + `xcodebuild -runFirstLaunch`) and there
