@@ -8,6 +8,7 @@ import 'features/lock/lock_gate.dart';
 import 'features/nutrition/nutrition_screen.dart';
 import 'features/nutrition/snap_meal_screen.dart';
 import 'features/order_hack/order_hack_screen.dart';
+import 'features/profile/body_profile_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/shell/pulsiq_shell.dart';
 import 'features/splash/splash_screen.dart';
@@ -45,6 +46,10 @@ GoRouter buildRouter() => GoRouter(
                 GoRoute(
                   path: 'privacy',
                   builder: (_, _) => const PrivacyScreen(),
+                ),
+                GoRoute(
+                  path: 'body',
+                  builder: (_, _) => const BodyProfileScreen(),
                 ),
               ],
             ),

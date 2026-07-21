@@ -14,6 +14,7 @@ class HydrationTargetInput {
     this.exerciseMinutes = 0,
     this.caffeineMl = 0,
     this.alcoholMl = 0,
+    this.baseMl,
   });
 
   final double? tempC;
@@ -21,12 +22,17 @@ class HydrationTargetInput {
   final int exerciseMinutes;
   final int caffeineMl;
   final int alcoholMl;
+
+  /// Body-mass baseline (~35 ml/kg) when a body profile exists. Falls back to
+  /// the flat [baseHydrationMl] otherwise, so a 55 kg and a 95 kg person no
+  /// longer share one target.
+  final int? baseMl;
 }
 
 const baseHydrationMl = 2000;
 
 int computeHydrationTargetMl(HydrationTargetInput input) {
-  var target = baseHydrationMl.toDouble();
+  var target = (input.baseMl ?? baseHydrationMl).toDouble();
   final temp = input.tempC;
   if (temp != null) {
     if (temp >= 30) {

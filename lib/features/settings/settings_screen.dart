@@ -56,6 +56,22 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Card(
+            child: ListTile(
+              leading: const Icon(Icons.accessibility_new_outlined),
+              title: const Text('Body profile'),
+              subtitle: Text(
+                switch (ref.watch(bodyProfileProvider).value) {
+                  final p? =>
+                    'Fuel targets personalized — ${p.targetCalories} kcal/day',
+                  _ => 'Add height and weight for personalized fuel targets',
+                },
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/body'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
             child: SwitchListTile(
               secondary: const Icon(Icons.fingerprint),
               title: const Text('Biometric app lock'),

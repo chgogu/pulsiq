@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/nutrition_providers.dart';
 import '../../data/providers.dart';
@@ -74,14 +75,14 @@ class NutritionScreen extends ConsumerWidget {
                   _MacroRow(
                     kind: MacroKind.carbs,
                     value: totals.carbsG,
-                    target: null,
+                    target: targets.carbsG,
                     unit: 'g',
                     color: MacroColors.of(MacroKind.carbs, theme.brightness),
                   ),
                   _MacroRow(
                     kind: MacroKind.fat,
                     value: totals.fatG,
-                    target: null,
+                    target: targets.fatG,
                     unit: 'g',
                     color: MacroColors.of(MacroKind.fat, theme.brightness),
                   ),
@@ -89,6 +90,8 @@ class NutritionScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          _BasisCard(targets: targets),
           const SizedBox(height: 16),
           Card(
             child: Padding(
@@ -140,7 +143,7 @@ class NutritionScreen extends ConsumerWidget {
     final calCtl = TextEditingController(text: '${current.calories}');
     final proCtl = TextEditingController(text: '${current.proteinG.round()}');
     final fibCtl = TextEditingController(text: '${current.fiberG.round()}');
-    final saved = await showModalBottomSheet<bool>(
+    final saved = await showModalBottomSheet<String>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
@@ -181,16 +184,28 @@ class NutritionScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: () => Navigator.pop(ctx, 'manual'),
               child: const Text('Save targets'),
+            ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'auto'),
+              child: const Text('Recompute from my body profile'),
             ),
           ],
         ),
       ),
     );
-    if (saved != true) return;
+    if (saved == null) return;
     final db = ref.read(appDatabaseProvider);
-    final next = NutritionTargets(
+    if (saved == 'auto') {
+      await db.setSetting(targetsModeKey, 'auto');
+      ref.invalidate(nutritionTargetsProvider);
+      return;
+    }
+    // Carbs and fat aren't in the sheet; carry them through so a manual
+    // calorie edit doesn't silently drop them back to defaults.
+    final next = current.copyWith(
       calories: int.tryParse(calCtl.text) ?? current.calories,
       proteinG: double.tryParse(proCtl.text) ?? current.proteinG,
       fiberG: double.tryParse(fibCtl.text) ?? current.fiberG,
@@ -198,7 +213,74 @@ class NutritionScreen extends ConsumerWidget {
     for (final entry in next.toSettings().entries) {
       await db.setSetting(entry.key, entry.value);
     }
+    await db.setSetting(targetsModeKey, 'manual');
     ref.invalidate(nutritionTargetsProvider);
+  }
+}
+
+/// Explains where today's targets came from, and routes to the body profile
+/// when there isn't one yet — the main discovery path for personalization.
+class _BasisCard extends ConsumerWidget {
+  const _BasisCard({required this.targets});
+
+  final NutritionTargets targets;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final body = ref.watch(bodyProfileProvider).value;
+
+    final (icon, title, detail) = switch (targets.source) {
+      TargetSource.derived when body != null => (
+          Icons.auto_awesome,
+          'Personalized to your body',
+          '${body.activity.label.toLowerCase()} · ${body.goal.label.toLowerCase()} · '
+              'resting burn ${body.bmr.round()} kcal, daily burn '
+              '${body.tdee.round()} kcal',
+        ),
+      TargetSource.manual => (
+          Icons.edit_outlined,
+          'Targets set by hand',
+          'Tap the tune icon to edit, or recompute from your body profile.',
+        ),
+      _ => (
+          Icons.person_add_alt,
+          'Using general defaults',
+          'Add your height and weight to get targets sized to your body.',
+        ),
+    };
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => context.push('/settings/body'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(detail,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  size: 20, color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

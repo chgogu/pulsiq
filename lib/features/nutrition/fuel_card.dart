@@ -24,7 +24,10 @@ class FuelCard extends ConsumerWidget {
         ref.watch(nutritionTargetsProvider).value ?? const NutritionTargets();
 
     if (totals.isEmpty) {
-      return _EmptyFuelCard(theme: theme);
+      return _EmptyFuelCard(
+        theme: theme,
+        personalized: targets.source != TargetSource.defaults,
+      );
     }
 
     final calProgress =
@@ -48,6 +51,10 @@ class FuelCard extends ConsumerWidget {
                       style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant),
                     ),
+                    if (targets.source == TargetSource.derived) ...[
+                      const SizedBox(width: 8),
+                      const _PersonalizedBadge(),
+                    ],
                     const Spacer(),
                     Icon(Icons.chevron_right,
                         size: 20, color: theme.colorScheme.onSurfaceVariant),
@@ -83,14 +90,14 @@ class FuelCard extends ConsumerWidget {
                           _MacroBar(
                             kind: MacroKind.carbs,
                             value: totals.carbsG,
-                            target: null,
+                            target: targets.carbsG,
                             unit: 'g',
                           ),
                           const SizedBox(height: 10),
                           _MacroBar(
                             kind: MacroKind.fat,
                             value: totals.fatG,
-                            target: null,
+                            target: targets.fatG,
                             unit: 'g',
                           ),
                         ],
@@ -98,9 +105,79 @@ class FuelCard extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 14),
+                _RemainingStrip(
+                  remaining: targets.calories - totals.calories,
+                  personalized: targets.source != TargetSource.defaults,
+                ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The single most actionable number on the card: what's left in the budget.
+class _RemainingStrip extends StatelessWidget {
+  const _RemainingStrip({required this.remaining, required this.personalized});
+
+  final int remaining;
+  final bool personalized;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final over = remaining < 0;
+    final color = over ? Colors.orange.shade700 : theme.colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(over ? Icons.trending_up : Icons.battery_charging_full,
+              size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              over
+                  ? '${-remaining} kcal over your target'
+                  : '$remaining kcal left today',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (!personalized)
+            Text('Add your body →',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PersonalizedBadge extends StatelessWidget {
+  const _PersonalizedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: PulseColors.pulse.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'For you',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: PulseColors.pulse,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -225,9 +302,10 @@ class _MacroBar extends StatelessWidget {
 }
 
 class _EmptyFuelCard extends StatelessWidget {
-  const _EmptyFuelCard({required this.theme});
+  const _EmptyFuelCard({required this.theme, required this.personalized});
 
   final ThemeData theme;
+  final bool personalized;
 
   @override
   Widget build(BuildContext context) {
@@ -235,20 +313,34 @@ class _EmptyFuelCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.local_fire_department_outlined,
-                  color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  "Snap a meal or log food and today's calories, protein, "
-                  'fiber, and more show up here.',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
+              Row(
+                children: [
+                  Icon(Icons.local_fire_department_outlined,
+                      color: theme.colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Snap a meal or log food and today's calories, protein, "
+                      'fiber, and more show up here.',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+                ],
               ),
+              if (!personalized)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => context.push('/settings/body'),
+                    icon: const Icon(Icons.straighten, size: 18),
+                    label: const Text('Size these to my body'),
+                  ),
+                ),
             ],
           ),
         ),

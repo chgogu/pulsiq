@@ -7,18 +7,29 @@ import 'providers.dart';
 final macroTotalsProvider = StreamProvider<MacroTotals>(
     (ref) => ref.watch(appDatabaseProvider).watchMacroTotals());
 
-/// Editable daily targets, loaded from settings (defaults in [NutritionTargets]).
+/// Set to `manual` once the user types their own targets; cleared back to
+/// `auto` by "Use my body profile".
+const targetsModeKey = 'targets_mode';
+
+/// Daily targets, in precedence order: hand-typed overrides, then numbers
+/// derived from the body profile, then flat defaults.
 final nutritionTargetsProvider = FutureProvider<NutritionTargets>((ref) async {
   final db = ref.watch(appDatabaseProvider);
-  final entries = <String, String?>{};
-  for (final key in const [
-    'target_calories',
-    'target_protein_g',
-    'target_fiber_g',
-  ]) {
-    entries[key] = await db.getSetting(key);
+  if (await db.getSetting(targetsModeKey) == 'manual') {
+    final entries = <String, String?>{};
+    for (final key in const [
+      'target_calories',
+      'target_protein_g',
+      'target_fiber_g',
+      'target_carbs_g',
+      'target_fat_g',
+    ]) {
+      entries[key] = await db.getSetting(key);
+    }
+    return NutritionTargets.fromSettings((k) => entries[k]);
   }
-  return NutritionTargets.fromSettings((k) => entries[k]);
+  final body = await ref.watch(bodyProfileProvider.future);
+  return body?.derivedTargets ?? const NutritionTargets();
 });
 
 /// Count of today's food entries — gates the cut-down advice (needs ≥2).

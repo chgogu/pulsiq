@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/body_profile.dart';
 import '../domain/hydration_target.dart';
 import 'db/app_database.dart';
 import 'log_repository.dart';
@@ -26,6 +27,18 @@ final todayDiureticMlProvider = StreamProvider<(int, int)>(
 final weatherProvider = FutureProvider<WeatherSnapshot?>(
     (ref) => WeatherService(ref.watch(appDatabaseProvider)).current());
 
+/// The user's body profile, or null until they fill one in. Lives here rather
+/// than in nutrition_providers because hydration needs it too.
+final bodyProfileProvider = FutureProvider<BodyProfile?>((ref) async {
+  final db = ref.watch(appDatabaseProvider);
+  final entries = <String, String?>{};
+  for (final key in BodyProfile.settingsKeys) {
+    entries[key] = await db.getSetting(key);
+  }
+  final profile = BodyProfile.fromSettings((k) => entries[k]);
+  return profile?.isUsable == true ? profile : null;
+});
+
 /// Recomputed on every log event (§3) because it watches the log streams.
 final hydrationTargetProvider = Provider<int>((ref) {
   final weather = ref.watch(weatherProvider).value;
@@ -33,12 +46,14 @@ final hydrationTargetProvider = Provider<int>((ref) {
   final (caffeine, alcohol) =
       ref.watch(todayDiureticMlProvider).value ?? (0, 0);
   final boost = ref.watch(morningBoostProvider).value ?? 0;
+  final body = ref.watch(bodyProfileProvider).value;
   return computeHydrationTargetMl(HydrationTargetInput(
         tempC: weather?.tempC,
         humidityPct: weather?.humidityPct,
         exerciseMinutes: exercise,
         caffeineMl: caffeine,
         alcoholMl: alcohol,
+        baseMl: body?.baseHydrationMl,
       )) +
       boost;
 });
