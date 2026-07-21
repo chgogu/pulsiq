@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/db/app_database.dart';
 import '../data/providers.dart';
 import '../domain/llm_contract.dart';
+import '../health/health_providers.dart';
 import '../llm/llm_client.dart';
 import '../services/notification_service.dart';
 import 'stt_service.dart';
@@ -100,6 +101,9 @@ class VoicePipeline extends Notifier<VoiceState> {
     } else {
       await _applyReply(reply);
       message = reply.coachingMessage;
+      // Correlation note (spec §3/§5): cite the strongest biometric signal.
+      final note = ref.read(correlationNoteProvider);
+      if (note != null) message = '$message\n$note';
     }
     state = state.copyWith(
         phase: VoicePhase.idle, transcript: '', coachingMessage: message);

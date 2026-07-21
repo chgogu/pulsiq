@@ -150,6 +150,21 @@ class LogRepository {
     await _audit('write', 'exercise', 'manual_edit');
   }
 
+  Future<int> startWalk({
+    required int targetMinutes,
+    required String source,
+  }) async {
+    final id = await _db.into(_db.walkSessions).insert(
+          WalkSessionsCompanion.insert(
+            targetMinutes: targetMinutes,
+            startedAt: DateTime.now(),
+            source: Value(source),
+          ),
+        );
+    await _audit('write', 'walk', source);
+    return id;
+  }
+
   Future<void> deleteItem(LogItem item) async {
     switch (item.kind) {
       case LogKind.food:

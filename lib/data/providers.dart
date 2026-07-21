@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/hydration_target.dart';
-import '../domain/pulsiq_score.dart';
 import 'db/app_database.dart';
 import 'log_repository.dart';
 import 'weather/weather_service.dart';
@@ -33,13 +32,15 @@ final hydrationTargetProvider = Provider<int>((ref) {
   final exercise = ref.watch(todayExerciseMinutesProvider).value ?? 0;
   final (caffeine, alcohol) =
       ref.watch(todayDiureticMlProvider).value ?? (0, 0);
+  final boost = ref.watch(morningBoostProvider).value ?? 0;
   return computeHydrationTargetMl(HydrationTargetInput(
-    tempC: weather?.tempC,
-    humidityPct: weather?.humidityPct,
-    exerciseMinutes: exercise,
-    caffeineMl: caffeine,
-    alcoholMl: alcohol,
-  ));
+        tempC: weather?.tempC,
+        humidityPct: weather?.humidityPct,
+        exerciseMinutes: exercise,
+        caffeineMl: caffeine,
+        alcoholMl: alcohol,
+      )) +
+      boost;
 });
 
 final _todayFoodsProvider = StreamProvider(
@@ -86,18 +87,11 @@ final fuelQualityProvider = Provider<double?>((ref) {
   return total / foods.length;
 });
 
-/// Cardiac + sleep stay mocked until M5 wires HealthKit/Health Connect;
-/// fuel and hydration are live from the local DB.
-final scoreInputProvider = Provider<PulsIQScoreInput>((ref) {
-  final consumed = ref.watch(todayHydrationMlProvider).value ?? 0;
-  final target = ref.watch(hydrationTargetProvider);
-  return PulsIQScoreInput(
-    cardiacRecovery: 0.82,
-    sleepQuality: 0.76,
-    fuelQuality: ref.watch(fuelQualityProvider),
-    hydrationProgress: target == 0 ? 0 : (consumed / target).clamp(0.0, 1.0),
-  );
+/// Extra ml added to today's target by the Morning Recovery Reset.
+final morningBoostProvider = FutureProvider<int>((ref) async {
+  final now = DateTime.now();
+  final v = await ref
+      .watch(appDatabaseProvider)
+      .getSetting('goal_boost_${now.year}-${now.month}-${now.day}');
+  return int.tryParse(v ?? '0') ?? 0;
 });
-
-final scoreResultProvider =
-    Provider((ref) => computePulsIQScore(ref.watch(scoreInputProvider)));

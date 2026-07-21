@@ -114,6 +114,34 @@ Non-negotiables from §0 are not re-litigated here.
 - **"PulsIQ is thinking" chip** floats above the FAB and never blocks
   further logging — the LLM round-trip runs detached.
 
+## M5 — Health integration & baselines (2026-07-21)
+
+- **health pinned to ^13.2** — unconstrained `pub add health` silently
+  resolved to 3.0.6 (a 2021 release) due to a transitive conflict;
+  pinning forced the modern API (device_info dropped from the graph).
+- **No fake biometric confidence:** the default health source is *empty*
+  (score renormalizes to fuel-only with a visible chip + connect CTA).
+  The seeded DemoHealthSource is an explicit Settings toggle for
+  previews/dev only. Real telemetry activates via the Pulse-card connect
+  button (permission grant persisted + audited).
+- **Baseline engine:** 7/30-day rolling averages exclude today and need
+  ≥3 samples per window; every displayed metric is delta-vs-baseline.
+- **Score components:** cardiac = mean of HRV-above-baseline and
+  RHR-below-baseline scores, ±20% off baseline spans the 0..1 range around
+  0.5. Sleep = 60% duration (8h ideal) + 40% efficiency, duration-only
+  fallback. Both null (renormalized away) until baselines exist.
+- **Morning Recovery Reset:** trigger rule in the pure engine (<11am and
+  sleep <6.5h or RHR >baseline+5), card actions: +500 ml goal boost
+  (feeds the live hydration target), protein-breakfast nudge, 10-min walk
+  start (WalkSessions row; live timer card lands in M6). Dismiss/complete
+  persists per-day.
+- **Correlation notes** (hot RHR > short sleep > HRV climb > calm RHR
+  precedence) are appended to voice-coach replies; same rules will feed
+  the M6 evening forecast.
+- **Platform:** HealthKit entitlement + usage string wired into the Xcode
+  project; Health Connect read permissions + permission-usage
+  activity-alias in the Android manifest.
+
 - **Verification gap:** M1's "runs on iOS simulator + Android emulator"
   criterion cannot be met on this machine yet — Xcode is only partially
   installed (needs App Store install + `xcodebuild -runFirstLaunch`) and there

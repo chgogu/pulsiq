@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/mock_data.dart';
 import '../../data/providers.dart';
+import '../../data/score_providers.dart';
 import '../logging/entry_sheet.dart';
 import 'hydration_card.dart';
 import 'log_tile.dart';
+import 'morning_reset_card.dart';
 import 'pulse_card.dart';
 import 'score_hero.dart';
 
@@ -17,7 +18,6 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final score = ref.watch(scoreResultProvider);
-    final biometrics = ref.watch(biometricsProvider);
     final consumedMl = ref.watch(todayHydrationMlProvider).value ?? 0;
     final targetMl = ref.watch(hydrationTargetProvider);
     final feed = ref.watch(logFeedProvider);
@@ -47,9 +47,10 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 4),
+          const MorningResetCard(),
           ScoreHero(result: score),
           const SizedBox(height: 16),
-          PulseCard(biometrics: biometrics),
+          const PulseCard(),
           const SizedBox(height: 16),
           HydrationCard(consumedMl: consumedMl, targetMl: targetMl),
           const SizedBox(height: 24),

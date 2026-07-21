@@ -4,6 +4,8 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

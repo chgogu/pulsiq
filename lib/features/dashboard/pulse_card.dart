@@ -1,15 +1,40 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/mock_data.dart';
+import '../../health/health_providers.dart';
 
-class PulseCard extends StatelessWidget {
-  const PulseCard({super.key, required this.biometrics});
+/// One Pulse-card row: today's value with its vs-baseline delta and a
+/// plain-language one-liner (spec §2: never raw jargon alone).
+class BiometricDelta {
+  const BiometricDelta({
+    required this.label,
+    required this.todayText,
+    required this.delta,
+    required this.deltaText,
+    required this.insight,
+    required this.icon,
+    this.higherIsBetter = true,
+  });
 
-  final List<BiometricDelta> biometrics;
+  final String label;
+  final String todayText;
+  final double delta;
+  final String deltaText;
+  final String insight;
+  final IconData icon;
+  final bool higherIsBetter;
+
+  bool get improving => higherIsBetter ? delta >= 0 : delta <= 0;
+}
+
+class PulseCard extends ConsumerWidget {
+  const PulseCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final rows = ref.watch(pulseCardProvider);
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
@@ -22,9 +47,63 @@ class PulseCard extends StatelessWidget {
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
-            for (final b in biometrics) _BiometricRow(b: b),
+            if (rows == null)
+              _ConnectPrompt(theme: theme)
+            else
+              for (final b in rows) _BiometricRow(b: b),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ConnectPrompt extends ConsumerWidget {
+  const _ConnectPrompt({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No wearable data yet. Connect Apple Health or Health Connect '
+            'and your pulse leads this dashboard — until then the score '
+            'runs fuel-only.',
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          if (kIsWeb)
+            Text(
+              'On this preview: Settings → "Demo biometrics" shows the '
+              'full experience with generated data.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            )
+          else
+            OutlinedButton.icon(
+              icon: const Icon(Icons.favorite_outline, size: 18),
+              label: const Text('Connect health data'),
+              onPressed: () async {
+                final granted =
+                    await ref.read(healthConnectorProvider)();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(SnackBar(
+                    content: Text(granted
+                        ? 'Connected — pulling your telemetry now.'
+                        : 'No permission granted — the score stays '
+                            'fuel-only for now.'),
+                  ));
+              },
+            ),
+        ],
       ),
     );
   }

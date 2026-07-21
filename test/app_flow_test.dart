@@ -183,14 +183,22 @@ void main() {
     await disposeApp(tester);
   });
 
-  testWidgets('score hero opens the breakdown sheet on tap', (tester) async {
+  testWidgets('without wearable data the score is honestly fuel-only',
+      (tester) async {
     await pumpApp(tester);
     await pumpToDashboard(tester);
+    // No health source connected → no cardiac/sleep components.
+    expect(find.text('Fuel-only'), findsOneWidget);
+
     await tester.tap(find.text('PulsIQ Score'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Score breakdown'), findsOneWidget);
-    expect(find.text('Cardiac recovery'), findsOneWidget);
+    expect(find.text('Cardiac recovery'), findsNothing);
+    expect(find.text('Hydration'), findsWidgets);
+    // Sheet explains the renormalization; the Pulse card separately
+    // carries its own connect CTA.
+    expect(find.textContaining('renormalized'), findsOneWidget);
     await disposeApp(tester);
   });
 }

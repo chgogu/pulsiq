@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../auth/auth_service.dart';
 import '../../data/providers.dart';
+import '../../health/health_providers.dart';
 import '../../security/app_lock.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -66,6 +67,22 @@ class SettingsScreen extends ConsumerWidget {
                           .setSetting(appLockSettingKey, v ? 'true' : 'false');
                       ref.invalidate(appLockEnabledProvider);
                     },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.science_outlined),
+              title: const Text('Demo biometrics'),
+              subtitle:
+                  const Text('Generated wearable data for previews/dev'),
+              value: ref.watch(demoHealthEnabledProvider).value ?? false,
+              onChanged: (v) async {
+                await ref
+                    .read(appDatabaseProvider)
+                    .setSetting(demoHealthSettingKey, v ? 'true' : 'false');
+                ref.invalidate(demoHealthEnabledProvider);
+              },
             ),
           ),
           const SizedBox(height: 12),
