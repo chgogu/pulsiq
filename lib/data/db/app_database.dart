@@ -1,6 +1,9 @@
 import 'package:drift/drift.dart';
 
+import '../../domain/nutrition.dart';
 import 'connection/connection.dart' as impl;
+
+export '../../domain/nutrition.dart' show MacroTotals, DayMacros;
 
 part 'app_database.g.dart';
 
@@ -15,6 +18,14 @@ class FoodEntries extends Table {
   TextColumn get name => text().withLength(min: 1, max: 200)();
   TextColumn get quantity => text().withDefault(const Constant(''))();
   TextColumn get qualityScore => textEnum<FuelQuality>()();
+  // Nutrition estimate (nullable — voice/manual entries may lack it; photo
+  // and detailed logs fill it in). Schema v2.
+  IntColumn get caloriesKcal => integer().nullable()();
+  RealColumn get proteinG => real().nullable()();
+  RealColumn get fiberG => real().nullable()();
+  RealColumn get carbsG => real().nullable()();
+  RealColumn get fatG => real().nullable()();
+  TextColumn get source => text().withDefault(const Constant('manual'))();
   DateTimeColumn get loggedAt => dateTime()();
 }
 
@@ -98,7 +109,23 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          // v2: nutrition macros on food entries (all additive & nullable).
+          if (from < 2) {
+            await m.addColumn(foodEntries, foodEntries.caloriesKcal);
+            await m.addColumn(foodEntries, foodEntries.proteinG);
+            await m.addColumn(foodEntries, foodEntries.fiberG);
+            await m.addColumn(foodEntries, foodEntries.carbsG);
+            await m.addColumn(foodEntries, foodEntries.fatG);
+            await m.addColumn(foodEntries, foodEntries.source);
+          }
+        },
+      );
 
   static DateTime startOfToday() {
     final now = DateTime.now();
@@ -169,6 +196,53 @@ class AppDatabase extends _$AppDatabase {
       ..addColumns([sum])
       ..where(exerciseEntries.loggedAt.isBiggerOrEqualValue(startOfToday()));
     return q.watchSingle().map((row) => row.read(sum) ?? 0);
+  }
+
+  /// Sum of today's food macros, since a given day-start.
+  Stream<MacroTotals> watchMacroTotals({DateTime? since}) {
+    final start = since ?? startOfToday();
+    final cal = foodEntries.caloriesKcal.sum();
+    final protein = foodEntries.proteinG.sum();
+    final fiber = foodEntries.fiberG.sum();
+    final carbs = foodEntries.carbsG.sum();
+    final fat = foodEntries.fatG.sum();
+    final q = selectOnly(foodEntries)
+      ..addColumns([cal, protein, fiber, carbs, fat])
+      ..where(foodEntries.loggedAt.isBiggerOrEqualValue(start));
+    return q.watchSingle().map((row) => MacroTotals(
+          calories: (row.read(cal) ?? 0).round(),
+          proteinG: row.read(protein) ?? 0,
+          fiberG: row.read(fiber) ?? 0,
+          carbsG: row.read(carbs) ?? 0,
+          fatG: row.read(fat) ?? 0,
+        ));
+  }
+
+  /// Per-day macro totals across a window, oldest first (for trends).
+  Future<List<DayMacros>> macrosByDay(int days) async {
+    final since = startOfToday().subtract(Duration(days: days - 1));
+    final rows = await (select(foodEntries)
+          ..where((t) => t.loggedAt.isBiggerOrEqualValue(since)))
+        .get();
+    final byDay = <DateTime, MacroTotals>{};
+    for (final f in rows) {
+      final d = DateTime(f.loggedAt.year, f.loggedAt.month, f.loggedAt.day);
+      final prev = byDay[d] ?? const MacroTotals.zero();
+      byDay[d] = prev.plus(MacroTotals(
+        calories: f.caloriesKcal ?? 0,
+        proteinG: f.proteinG ?? 0,
+        fiberG: f.fiberG ?? 0,
+        carbsG: f.carbsG ?? 0,
+        fatG: f.fatG ?? 0,
+      ));
+    }
+    return [
+      for (var i = 0; i < days; i++)
+        () {
+          final d = since.add(Duration(days: i));
+          return DayMacros(d, byDay[d] ?? const MacroTotals.zero());
+        }(),
+    ];
   }
 
   Future<void> markWalkComplete(int id) async {

@@ -64,15 +64,27 @@ class LogRepository {
     required String name,
     required String quantity,
     required FuelQuality quality,
+    int? caloriesKcal,
+    double? proteinG,
+    double? fiberG,
+    double? carbsG,
+    double? fatG,
+    String source = 'manual',
     DateTime? at,
   }) async {
     await _db.into(_db.foodEntries).insert(FoodEntriesCompanion.insert(
           name: name,
           quantity: Value(quantity),
           qualityScore: quality,
+          caloriesKcal: Value(caloriesKcal),
+          proteinG: Value(proteinG),
+          fiberG: Value(fiberG),
+          carbsG: Value(carbsG),
+          fatG: Value(fatG),
+          source: Value(source),
           loggedAt: at ?? DateTime.now(),
         ));
-    await _audit('write', 'food', 'manual_entry');
+    await _audit('write', 'food', source == 'manual' ? 'manual_entry' : source);
   }
 
   /// Water-type beverages also count toward hydration.
@@ -195,7 +207,9 @@ LogItem foodToItem(FoodEntry e) => LogItem(
       id: e.id,
       title: e.name,
       detail: [
-        if (e.quantity.isNotEmpty) e.quantity,
+        if (e.caloriesKcal != null) '${e.caloriesKcal} kcal',
+        if (e.proteinG != null) '${e.proteinG!.round()}g protein',
+        if (e.caloriesKcal == null && e.quantity.isNotEmpty) e.quantity,
         '${e.qualityScore.name} fuel',
       ].join(' · '),
       loggedAt: e.loggedAt,

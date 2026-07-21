@@ -5,6 +5,8 @@ import 'features/dashboard/dashboard_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/sign_in_screen.dart';
 import 'features/lock/lock_gate.dart';
+import 'features/nutrition/nutrition_screen.dart';
+import 'features/nutrition/snap_meal_screen.dart';
 import 'features/order_hack/order_hack_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/shell/pulsiq_shell.dart';
@@ -27,6 +29,14 @@ GoRouter buildRouter() => GoRouter(
             GoRoute(
               path: '/order-hack',
               builder: (_, _) => const OrderHackScreen(),
+            ),
+            GoRoute(
+              path: '/nutrition',
+              builder: (_, _) => const NutritionScreen(),
+            ),
+            GoRoute(
+              path: '/snap-meal',
+              builder: (_, _) => const SnapMealScreen(),
             ),
             GoRoute(
               path: '/settings',

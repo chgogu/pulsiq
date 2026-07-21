@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
 import '../../data/score_providers.dart';
+import '../nutrition/cut_down_card.dart';
+import '../nutrition/fuel_card.dart';
 import '../walk/walk_timer_card.dart';
 import '../logging/entry_sheet.dart';
 import 'evening_forecast_card.dart';
@@ -56,6 +58,8 @@ class DashboardScreen extends ConsumerWidget {
           const EveningForecastCard(),
           const PulseCard(),
           const SizedBox(height: 16),
+          const CutDownCard(),
+          const FuelCard(),
           HydrationCard(consumedMl: consumedMl, targetMl: targetMl),
           const SizedBox(height: 24),
           Row(

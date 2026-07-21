@@ -41,6 +41,13 @@ class DeadBackend implements LlmBackend {
   @override
   Future<String> analyzeMenu(String menuText) async =>
       throw Exception('offline');
+
+  @override
+  Future<String> analyzeMealImage({
+    required String base64Image,
+    String hint = '',
+  }) async =>
+      throw Exception('offline');
 }
 
 Future<void> _settle() =>

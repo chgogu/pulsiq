@@ -56,6 +56,65 @@ class $FoodEntriesTable extends FoodEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   ).withConverter<FuelQuality>($FoodEntriesTable.$converterqualityScore);
+  static const VerificationMeta _caloriesKcalMeta = const VerificationMeta(
+    'caloriesKcal',
+  );
+  @override
+  late final GeneratedColumn<int> caloriesKcal = GeneratedColumn<int>(
+    'calories_kcal',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _proteinGMeta = const VerificationMeta(
+    'proteinG',
+  );
+  @override
+  late final GeneratedColumn<double> proteinG = GeneratedColumn<double>(
+    'protein_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fiberGMeta = const VerificationMeta('fiberG');
+  @override
+  late final GeneratedColumn<double> fiberG = GeneratedColumn<double>(
+    'fiber_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _carbsGMeta = const VerificationMeta('carbsG');
+  @override
+  late final GeneratedColumn<double> carbsG = GeneratedColumn<double>(
+    'carbs_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fatGMeta = const VerificationMeta('fatG');
+  @override
+  late final GeneratedColumn<double> fatG = GeneratedColumn<double>(
+    'fat_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('manual'),
+  );
   static const VerificationMeta _loggedAtMeta = const VerificationMeta(
     'loggedAt',
   );
@@ -73,6 +132,12 @@ class $FoodEntriesTable extends FoodEntries
     name,
     quantity,
     qualityScore,
+    caloriesKcal,
+    proteinG,
+    fiberG,
+    carbsG,
+    fatG,
+    source,
     loggedAt,
   ];
   @override
@@ -102,6 +167,45 @@ class $FoodEntriesTable extends FoodEntries
       context.handle(
         _quantityMeta,
         quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta),
+      );
+    }
+    if (data.containsKey('calories_kcal')) {
+      context.handle(
+        _caloriesKcalMeta,
+        caloriesKcal.isAcceptableOrUnknown(
+          data['calories_kcal']!,
+          _caloriesKcalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('protein_g')) {
+      context.handle(
+        _proteinGMeta,
+        proteinG.isAcceptableOrUnknown(data['protein_g']!, _proteinGMeta),
+      );
+    }
+    if (data.containsKey('fiber_g')) {
+      context.handle(
+        _fiberGMeta,
+        fiberG.isAcceptableOrUnknown(data['fiber_g']!, _fiberGMeta),
+      );
+    }
+    if (data.containsKey('carbs_g')) {
+      context.handle(
+        _carbsGMeta,
+        carbsG.isAcceptableOrUnknown(data['carbs_g']!, _carbsGMeta),
+      );
+    }
+    if (data.containsKey('fat_g')) {
+      context.handle(
+        _fatGMeta,
+        fatG.isAcceptableOrUnknown(data['fat_g']!, _fatGMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
       );
     }
     if (data.containsKey('logged_at')) {
@@ -139,6 +243,30 @@ class $FoodEntriesTable extends FoodEntries
           data['${effectivePrefix}quality_score'],
         )!,
       ),
+      caloriesKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calories_kcal'],
+      ),
+      proteinG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}protein_g'],
+      ),
+      fiberG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fiber_g'],
+      ),
+      carbsG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}carbs_g'],
+      ),
+      fatG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fat_g'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
       loggedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}logged_at'],
@@ -162,12 +290,24 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
   final String name;
   final String quantity;
   final FuelQuality qualityScore;
+  final int? caloriesKcal;
+  final double? proteinG;
+  final double? fiberG;
+  final double? carbsG;
+  final double? fatG;
+  final String source;
   final DateTime loggedAt;
   const FoodEntry({
     required this.id,
     required this.name,
     required this.quantity,
     required this.qualityScore,
+    this.caloriesKcal,
+    this.proteinG,
+    this.fiberG,
+    this.carbsG,
+    this.fatG,
+    required this.source,
     required this.loggedAt,
   });
   @override
@@ -181,6 +321,22 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
         $FoodEntriesTable.$converterqualityScore.toSql(qualityScore),
       );
     }
+    if (!nullToAbsent || caloriesKcal != null) {
+      map['calories_kcal'] = Variable<int>(caloriesKcal);
+    }
+    if (!nullToAbsent || proteinG != null) {
+      map['protein_g'] = Variable<double>(proteinG);
+    }
+    if (!nullToAbsent || fiberG != null) {
+      map['fiber_g'] = Variable<double>(fiberG);
+    }
+    if (!nullToAbsent || carbsG != null) {
+      map['carbs_g'] = Variable<double>(carbsG);
+    }
+    if (!nullToAbsent || fatG != null) {
+      map['fat_g'] = Variable<double>(fatG);
+    }
+    map['source'] = Variable<String>(source);
     map['logged_at'] = Variable<DateTime>(loggedAt);
     return map;
   }
@@ -191,6 +347,20 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
       name: Value(name),
       quantity: Value(quantity),
       qualityScore: Value(qualityScore),
+      caloriesKcal: caloriesKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caloriesKcal),
+      proteinG: proteinG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(proteinG),
+      fiberG: fiberG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fiberG),
+      carbsG: carbsG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(carbsG),
+      fatG: fatG == null && nullToAbsent ? const Value.absent() : Value(fatG),
+      source: Value(source),
       loggedAt: Value(loggedAt),
     );
   }
@@ -207,6 +377,12 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
       qualityScore: $FoodEntriesTable.$converterqualityScore.fromJson(
         serializer.fromJson<String>(json['qualityScore']),
       ),
+      caloriesKcal: serializer.fromJson<int?>(json['caloriesKcal']),
+      proteinG: serializer.fromJson<double?>(json['proteinG']),
+      fiberG: serializer.fromJson<double?>(json['fiberG']),
+      carbsG: serializer.fromJson<double?>(json['carbsG']),
+      fatG: serializer.fromJson<double?>(json['fatG']),
+      source: serializer.fromJson<String>(json['source']),
       loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
     );
   }
@@ -220,6 +396,12 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
       'qualityScore': serializer.toJson<String>(
         $FoodEntriesTable.$converterqualityScore.toJson(qualityScore),
       ),
+      'caloriesKcal': serializer.toJson<int?>(caloriesKcal),
+      'proteinG': serializer.toJson<double?>(proteinG),
+      'fiberG': serializer.toJson<double?>(fiberG),
+      'carbsG': serializer.toJson<double?>(carbsG),
+      'fatG': serializer.toJson<double?>(fatG),
+      'source': serializer.toJson<String>(source),
       'loggedAt': serializer.toJson<DateTime>(loggedAt),
     };
   }
@@ -229,12 +411,24 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
     String? name,
     String? quantity,
     FuelQuality? qualityScore,
+    Value<int?> caloriesKcal = const Value.absent(),
+    Value<double?> proteinG = const Value.absent(),
+    Value<double?> fiberG = const Value.absent(),
+    Value<double?> carbsG = const Value.absent(),
+    Value<double?> fatG = const Value.absent(),
+    String? source,
     DateTime? loggedAt,
   }) => FoodEntry(
     id: id ?? this.id,
     name: name ?? this.name,
     quantity: quantity ?? this.quantity,
     qualityScore: qualityScore ?? this.qualityScore,
+    caloriesKcal: caloriesKcal.present ? caloriesKcal.value : this.caloriesKcal,
+    proteinG: proteinG.present ? proteinG.value : this.proteinG,
+    fiberG: fiberG.present ? fiberG.value : this.fiberG,
+    carbsG: carbsG.present ? carbsG.value : this.carbsG,
+    fatG: fatG.present ? fatG.value : this.fatG,
+    source: source ?? this.source,
     loggedAt: loggedAt ?? this.loggedAt,
   );
   FoodEntry copyWithCompanion(FoodEntriesCompanion data) {
@@ -245,6 +439,14 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
       qualityScore: data.qualityScore.present
           ? data.qualityScore.value
           : this.qualityScore,
+      caloriesKcal: data.caloriesKcal.present
+          ? data.caloriesKcal.value
+          : this.caloriesKcal,
+      proteinG: data.proteinG.present ? data.proteinG.value : this.proteinG,
+      fiberG: data.fiberG.present ? data.fiberG.value : this.fiberG,
+      carbsG: data.carbsG.present ? data.carbsG.value : this.carbsG,
+      fatG: data.fatG.present ? data.fatG.value : this.fatG,
+      source: data.source.present ? data.source.value : this.source,
       loggedAt: data.loggedAt.present ? data.loggedAt.value : this.loggedAt,
     );
   }
@@ -256,13 +458,31 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
           ..write('name: $name, ')
           ..write('quantity: $quantity, ')
           ..write('qualityScore: $qualityScore, ')
+          ..write('caloriesKcal: $caloriesKcal, ')
+          ..write('proteinG: $proteinG, ')
+          ..write('fiberG: $fiberG, ')
+          ..write('carbsG: $carbsG, ')
+          ..write('fatG: $fatG, ')
+          ..write('source: $source, ')
           ..write('loggedAt: $loggedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, quantity, qualityScore, loggedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    quantity,
+    qualityScore,
+    caloriesKcal,
+    proteinG,
+    fiberG,
+    carbsG,
+    fatG,
+    source,
+    loggedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -271,6 +491,12 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
           other.name == this.name &&
           other.quantity == this.quantity &&
           other.qualityScore == this.qualityScore &&
+          other.caloriesKcal == this.caloriesKcal &&
+          other.proteinG == this.proteinG &&
+          other.fiberG == this.fiberG &&
+          other.carbsG == this.carbsG &&
+          other.fatG == this.fatG &&
+          other.source == this.source &&
           other.loggedAt == this.loggedAt);
 }
 
@@ -279,12 +505,24 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
   final Value<String> name;
   final Value<String> quantity;
   final Value<FuelQuality> qualityScore;
+  final Value<int?> caloriesKcal;
+  final Value<double?> proteinG;
+  final Value<double?> fiberG;
+  final Value<double?> carbsG;
+  final Value<double?> fatG;
+  final Value<String> source;
   final Value<DateTime> loggedAt;
   const FoodEntriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.quantity = const Value.absent(),
     this.qualityScore = const Value.absent(),
+    this.caloriesKcal = const Value.absent(),
+    this.proteinG = const Value.absent(),
+    this.fiberG = const Value.absent(),
+    this.carbsG = const Value.absent(),
+    this.fatG = const Value.absent(),
+    this.source = const Value.absent(),
     this.loggedAt = const Value.absent(),
   });
   FoodEntriesCompanion.insert({
@@ -292,6 +530,12 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     required String name,
     this.quantity = const Value.absent(),
     required FuelQuality qualityScore,
+    this.caloriesKcal = const Value.absent(),
+    this.proteinG = const Value.absent(),
+    this.fiberG = const Value.absent(),
+    this.carbsG = const Value.absent(),
+    this.fatG = const Value.absent(),
+    this.source = const Value.absent(),
     required DateTime loggedAt,
   }) : name = Value(name),
        qualityScore = Value(qualityScore),
@@ -301,6 +545,12 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     Expression<String>? name,
     Expression<String>? quantity,
     Expression<String>? qualityScore,
+    Expression<int>? caloriesKcal,
+    Expression<double>? proteinG,
+    Expression<double>? fiberG,
+    Expression<double>? carbsG,
+    Expression<double>? fatG,
+    Expression<String>? source,
     Expression<DateTime>? loggedAt,
   }) {
     return RawValuesInsertable({
@@ -308,6 +558,12 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
       if (name != null) 'name': name,
       if (quantity != null) 'quantity': quantity,
       if (qualityScore != null) 'quality_score': qualityScore,
+      if (caloriesKcal != null) 'calories_kcal': caloriesKcal,
+      if (proteinG != null) 'protein_g': proteinG,
+      if (fiberG != null) 'fiber_g': fiberG,
+      if (carbsG != null) 'carbs_g': carbsG,
+      if (fatG != null) 'fat_g': fatG,
+      if (source != null) 'source': source,
       if (loggedAt != null) 'logged_at': loggedAt,
     });
   }
@@ -317,6 +573,12 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     Value<String>? name,
     Value<String>? quantity,
     Value<FuelQuality>? qualityScore,
+    Value<int?>? caloriesKcal,
+    Value<double?>? proteinG,
+    Value<double?>? fiberG,
+    Value<double?>? carbsG,
+    Value<double?>? fatG,
+    Value<String>? source,
     Value<DateTime>? loggedAt,
   }) {
     return FoodEntriesCompanion(
@@ -324,6 +586,12 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
       name: name ?? this.name,
       quantity: quantity ?? this.quantity,
       qualityScore: qualityScore ?? this.qualityScore,
+      caloriesKcal: caloriesKcal ?? this.caloriesKcal,
+      proteinG: proteinG ?? this.proteinG,
+      fiberG: fiberG ?? this.fiberG,
+      carbsG: carbsG ?? this.carbsG,
+      fatG: fatG ?? this.fatG,
+      source: source ?? this.source,
       loggedAt: loggedAt ?? this.loggedAt,
     );
   }
@@ -345,6 +613,24 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
         $FoodEntriesTable.$converterqualityScore.toSql(qualityScore.value),
       );
     }
+    if (caloriesKcal.present) {
+      map['calories_kcal'] = Variable<int>(caloriesKcal.value);
+    }
+    if (proteinG.present) {
+      map['protein_g'] = Variable<double>(proteinG.value);
+    }
+    if (fiberG.present) {
+      map['fiber_g'] = Variable<double>(fiberG.value);
+    }
+    if (carbsG.present) {
+      map['carbs_g'] = Variable<double>(carbsG.value);
+    }
+    if (fatG.present) {
+      map['fat_g'] = Variable<double>(fatG.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
     if (loggedAt.present) {
       map['logged_at'] = Variable<DateTime>(loggedAt.value);
     }
@@ -358,6 +644,12 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
           ..write('name: $name, ')
           ..write('quantity: $quantity, ')
           ..write('qualityScore: $qualityScore, ')
+          ..write('caloriesKcal: $caloriesKcal, ')
+          ..write('proteinG: $proteinG, ')
+          ..write('fiberG: $fiberG, ')
+          ..write('carbsG: $carbsG, ')
+          ..write('fatG: $fatG, ')
+          ..write('source: $source, ')
           ..write('loggedAt: $loggedAt')
           ..write(')'))
         .toString();
@@ -2835,6 +3127,12 @@ typedef $$FoodEntriesTableCreateCompanionBuilder =
       required String name,
       Value<String> quantity,
       required FuelQuality qualityScore,
+      Value<int?> caloriesKcal,
+      Value<double?> proteinG,
+      Value<double?> fiberG,
+      Value<double?> carbsG,
+      Value<double?> fatG,
+      Value<String> source,
       required DateTime loggedAt,
     });
 typedef $$FoodEntriesTableUpdateCompanionBuilder =
@@ -2843,6 +3141,12 @@ typedef $$FoodEntriesTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> quantity,
       Value<FuelQuality> qualityScore,
+      Value<int?> caloriesKcal,
+      Value<double?> proteinG,
+      Value<double?> fiberG,
+      Value<double?> carbsG,
+      Value<double?> fatG,
+      Value<String> source,
       Value<DateTime> loggedAt,
     });
 
@@ -2874,6 +3178,36 @@ class $$FoodEntriesTableFilterComposer
   get qualityScore => $composableBuilder(
     column: $table.qualityScore,
     builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get proteinG => $composableBuilder(
+    column: $table.proteinG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fiberG => $composableBuilder(
+    column: $table.fiberG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get carbsG => $composableBuilder(
+    column: $table.carbsG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fatG => $composableBuilder(
+    column: $table.fatG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<DateTime> get loggedAt => $composableBuilder(
@@ -2911,6 +3245,36 @@ class $$FoodEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get proteinG => $composableBuilder(
+    column: $table.proteinG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fiberG => $composableBuilder(
+    column: $table.fiberG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get carbsG => $composableBuilder(
+    column: $table.carbsG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fatG => $composableBuilder(
+    column: $table.fatG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get loggedAt => $composableBuilder(
     column: $table.loggedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2940,6 +3304,26 @@ class $$FoodEntriesTableAnnotationComposer
         column: $table.qualityScore,
         builder: (column) => column,
       );
+
+  GeneratedColumn<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get proteinG =>
+      $composableBuilder(column: $table.proteinG, builder: (column) => column);
+
+  GeneratedColumn<double> get fiberG =>
+      $composableBuilder(column: $table.fiberG, builder: (column) => column);
+
+  GeneratedColumn<double> get carbsG =>
+      $composableBuilder(column: $table.carbsG, builder: (column) => column);
+
+  GeneratedColumn<double> get fatG =>
+      $composableBuilder(column: $table.fatG, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
 
   GeneratedColumn<DateTime> get loggedAt =>
       $composableBuilder(column: $table.loggedAt, builder: (column) => column);
@@ -2980,12 +3364,24 @@ class $$FoodEntriesTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> quantity = const Value.absent(),
                 Value<FuelQuality> qualityScore = const Value.absent(),
+                Value<int?> caloriesKcal = const Value.absent(),
+                Value<double?> proteinG = const Value.absent(),
+                Value<double?> fiberG = const Value.absent(),
+                Value<double?> carbsG = const Value.absent(),
+                Value<double?> fatG = const Value.absent(),
+                Value<String> source = const Value.absent(),
                 Value<DateTime> loggedAt = const Value.absent(),
               }) => FoodEntriesCompanion(
                 id: id,
                 name: name,
                 quantity: quantity,
                 qualityScore: qualityScore,
+                caloriesKcal: caloriesKcal,
+                proteinG: proteinG,
+                fiberG: fiberG,
+                carbsG: carbsG,
+                fatG: fatG,
+                source: source,
                 loggedAt: loggedAt,
               ),
           createCompanionCallback:
@@ -2994,12 +3390,24 @@ class $$FoodEntriesTableTableManager
                 required String name,
                 Value<String> quantity = const Value.absent(),
                 required FuelQuality qualityScore,
+                Value<int?> caloriesKcal = const Value.absent(),
+                Value<double?> proteinG = const Value.absent(),
+                Value<double?> fiberG = const Value.absent(),
+                Value<double?> carbsG = const Value.absent(),
+                Value<double?> fatG = const Value.absent(),
+                Value<String> source = const Value.absent(),
                 required DateTime loggedAt,
               }) => FoodEntriesCompanion.insert(
                 id: id,
                 name: name,
                 quantity: quantity,
                 qualityScore: qualityScore,
+                caloriesKcal: caloriesKcal,
+                proteinG: proteinG,
+                fiberG: fiberG,
+                carbsG: carbsG,
+                fatG: fatG,
+                source: source,
                 loggedAt: loggedAt,
               ),
           withReferenceMapper: (p0) => p0

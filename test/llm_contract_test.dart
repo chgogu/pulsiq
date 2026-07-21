@@ -36,6 +36,13 @@ class ScriptedBackend implements LlmBackend {
 
   @override
   Future<String> analyzeMenu(String menuText) => complete(menuText);
+
+  @override
+  Future<String> analyzeMealImage({
+    required String base64Image,
+    String hint = '',
+  }) =>
+      complete(hint);
 }
 
 void main() {

@@ -166,6 +166,46 @@ Non-negotiables from §0 are not re-litigated here.
 - **PulsIQ Score v1** completed in M5 (baseline-driven cardiac + fuel-only
   renormalization); M6 adds completed-walk minutes as an input.
 
+## Nutrition & meal-photo analysis (post-M7 feature, 2026-07-21)
+
+Owner-requested extension (spec at `NUTRITION_VISION_PROMPT.md`). Deliberate
+product change from the original "energy-only, no raw numbers" framing — the
+owner wants explicit macro tracking. We surface the numbers but keep the warm
+energy-first coaching voice and the not-medical-advice stance.
+
+- **Model:** meal-photo vision runs on **Claude Opus 4.8** (`claude-opus-4-8`)
+  — Anthropic's most capable generally-available model with high-res vision,
+  the right default for food-macro estimation (Fable 5 is above-Opus pricing
+  and gated for dual-use, unnecessary here). It runs **server-side on the
+  Supabase proxy** — no API keys in the app (§0 unchanged); the app POSTs
+  base64 image + optional hint to `/v1/meal-vision`.
+- **Schema v2** (additive migration): FoodEntries gains calories/protein/
+  fiber/carbs/fat (nullable) + a `source`. Daily aggregation + 7-day history
+  queries; targets (cal 2000 / protein 100 / fiber 30) editable in Settings.
+- **Offline/web/test fallback:** the on-device mock can't see pixels, so it
+  estimates from the user's text hint via a keyword→macro table (mixed-plate
+  default at low confidence). Keeps the full analytics pipeline runnable
+  without the proxy. Real vision activates with the proxy URL.
+- **Capture flow:** photo (camera/gallery, image_picker) → "reading your
+  plate" → editable per-item review (correct any macro before it commits) →
+  food entries with `source: photo`. Low-confidence results prompt a fix.
+- **Analytics UI:** dashboard "Today's fuel" card (calorie ring in the brand
+  hue + protein/fiber/carbs/fat bars vs target) → Nutrition detail (per-macro
+  progress, 7-day calorie trend, meal breakdown, targets editor). Charts
+  follow the dataviz reference palette: macro categorical colors are the first
+  four validated CVD-safe slots (protein=blue, carbs=amber, fat=magenta,
+  fiber=green), each bar also directly labeled so identity never rests on
+  color alone; single-series calorie ring/trend use the brand hue (one axis,
+  no dual-scale).
+- **Cut-down engine** (pure, unit-tested): appears after ≥2 meals; ranks the
+  largest over-target macro, always pairs a cut with a concrete swap,
+  time-of-day aware, wellness-framed. Also on the dashboard.
+- **iPhone testing:** web build now served on the LAN (0.0.0.0:8087) so the
+  owner opens it in iPhone Safari immediately — camera/photo + full nutrition
+  UI work there. Native build (HealthKit/STT) prerequisites documented in
+  `store/IPHONE_BUILD.md`; blocked on the owner installing full Xcode +
+  CocoaPods + an Apple ID for signing — the same toolchain gap noted below.
+
 ## M7 — Hardening & store prep (2026-07-21)
 
 - **Data export + delete-all** (§4): Settings → one tile each (≤3 taps

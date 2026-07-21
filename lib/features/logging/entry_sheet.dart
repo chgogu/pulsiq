@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/db/app_database.dart';
 import '../../data/log_repository.dart';
@@ -171,6 +172,19 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
             Text(editing ? 'Edit entry' : 'Log something',
                 style: theme.textTheme.titleLarge),
             const SizedBox(height: 16),
+            if (!editing) ...[
+              FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.of(context).maybePop();
+                  context.push('/snap-meal');
+                },
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: const Text('Snap a meal — auto calories & macros'),
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46)),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (!editing)
               SegmentedButton<LogKind>(
                 segments: const [
