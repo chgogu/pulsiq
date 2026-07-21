@@ -10,7 +10,14 @@
 		<string>PulsIQ uses the camera to scan menus and hand you the top energy-optimized picks.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>PulsIQ reads menu photos from your library to suggest steady-energy picks.</string>
-		<key>NSMicrophoneUsageDescription</key>
+		<key>NSLocalNetworkUsageDescription</key>
+	<string>PulsIQ connects to the nutrition analysis server running on your computer to estimate calories and macros from meal photos.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSMicrophoneUsageDescription</key>
 		<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
 		<string>PulsIQ transcribes your voice notes on-device to build your log.</string>

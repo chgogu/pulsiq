@@ -1,0 +1,13 @@
+{
+  "name": "pulsiq-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PulsIQ LLM/vision proxy (Gemini) — keeps the API key off the device.",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^2.13.0"
+  }
+}

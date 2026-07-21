@@ -2,7 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>com.apple.developer.healthkit</key>
-	<true/>
+	<!--
+	  HealthKit is temporarily NOT declared, so the app can be signed with a
+	  free personal team for on-device testing. Apple grants
+	  com.apple.developer.healthkit only to paid Developer Program members;
+	  automatic signing fails outright on a free team while it is present.
+
+	  The app degrades gracefully: PlatformHealthSource.requestPermissions()
+	  returns false, the app falls back to EmptyHealthSource, and the PulsIQ
+	  Score honestly renormalizes to "fuel-only". Use Settings → Demo
+	  biometrics to exercise the Pulse card and the full weighted score while
+	  testing.
+
+	  TO RESTORE after enrolling in the paid program, add back:
+	    <key>com.apple.developer.healthkit</key>
+	    <true/>
+	  and re-enable the HealthKit capability on the Runner target in Xcode.
+	-->
 </dict>
 </plist>
