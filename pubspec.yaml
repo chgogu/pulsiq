@@ -48,6 +48,7 @@ dependencies:
   path_provider: ^2.1.6
   path: ^1.9.1
   sqlite3: ^3.5.0
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/pulsiq_system_prompt.txt
 
   # To add assets to your application, add an assets section, like this:
   # assets:

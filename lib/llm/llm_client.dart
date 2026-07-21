@@ -1,0 +1,213 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../domain/llm_contract.dart';
+
+/// Transport for one model behind the backend proxy. No API keys in the
+/// app (§0) — the proxy injects the system prompt server-side and holds
+/// the provider credentials.
+abstract interface class LlmBackend {
+  String get name;
+  Future<String> complete(String userText);
+}
+
+class ProxyBackend implements LlmBackend {
+  ProxyBackend({
+    required this.baseUrl,
+    required this.model,
+    http.Client? client,
+  }) : _client = client ?? http.Client();
+
+  final String baseUrl;
+  final String model; // 'claude' (primary) or 'gemini-flash' (fallback)
+  final http.Client _client;
+
+  @override
+  String get name => model;
+
+  @override
+  Future<String> complete(String userText) async {
+    final res = await _client
+        .post(
+          Uri.parse('$baseUrl/v1/coach'),
+          headers: {'content-type': 'application/json'},
+          body: jsonEncode({'model': model, 'text': userText}),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (res.statusCode != 200) {
+      throw http.ClientException('proxy ${res.statusCode}');
+    }
+    return (jsonDecode(res.body) as Map<String, dynamic>)['reply'] as String;
+  }
+}
+
+/// Deterministic on-device stand-in used until the proxy is deployed (and
+/// in tests). Produces contract-valid JSON from transcript keywords so the
+/// entire pipeline — parse → validate → insert → rings — runs for real.
+class MockLlmBackend implements LlmBackend {
+  const MockLlmBackend();
+
+  @override
+  String get name => 'on-device-mock';
+
+  static final _numberWord = {
+    'a': 1, 'an': 1, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+  };
+
+  @override
+  Future<String> complete(String userText) async {
+    final text = userText.toLowerCase();
+    final beverages = <Map<String, dynamic>>[];
+    final foods = <Map<String, dynamic>>[];
+    final exercise = <Map<String, dynamic>>[];
+    var hydration = 0;
+
+    final mlMatch = RegExp(r'(\d+)\s*ml\b').firstMatch(text);
+    final ozMatch = RegExp(r'(\d+)\s*(?:oz|ounce)').firstMatch(text);
+    final glassMatch =
+        RegExp(r'(\w+)?\s*glass(?:es)? of water').firstMatch(text);
+    if (text.contains('water')) {
+      if (mlMatch != null) {
+        hydration = int.parse(mlMatch.group(1)!);
+      } else if (ozMatch != null) {
+        hydration = (int.parse(ozMatch.group(1)!) * 29.5735).round();
+      } else if (glassMatch != null) {
+        hydration = 250 * (_numberWord[glassMatch.group(1)] ?? 1);
+      } else {
+        hydration = 250;
+      }
+    }
+
+    if (RegExp(r'coffee|latte|espresso|cappuccino|cold brew').hasMatch(text)) {
+      final sweet = text.contains('caramel') ||
+          text.contains('mocha') ||
+          text.contains('syrup');
+      beverages.add({
+        'name': 'Coffee',
+        'sugar_content_g': sweet ? 24 : 4,
+        'type': 'caffeine',
+      });
+    }
+    if (RegExp(r'\bbeer|wine|cocktail\b').hasMatch(text)) {
+      beverages.add(
+          {'name': 'Drink', 'sugar_content_g': 6, 'type': 'alcohol'});
+    }
+    if (RegExp(r'protein shake|protein drink').hasMatch(text)) {
+      beverages.add(
+          {'name': 'Protein shake', 'sugar_content_g': 3, 'type': 'protein'});
+    }
+
+    final dense = RegExp(
+        r'pasta|pizza|burger|fries|donut|dessert|cake|rice bowl|burrito');
+    final clean = RegExp(r'salad|eggs|chicken|fish|yogurt|oats|vegetables');
+    final foodMention = RegExp(
+            r'\b(ate|had|eating|lunch|dinner|breakfast|snack(?:ed)?)\b')
+        .hasMatch(text);
+    if (foodMention || dense.hasMatch(text) || clean.hasMatch(text)) {
+      final denseHit = dense.firstMatch(text);
+      final cleanHit = clean.firstMatch(text);
+      if (denseHit != null) {
+        foods.add({
+          'name': denseHit.group(0)!,
+          'quantity': '1 serving',
+          'quality_score': 'dense',
+        });
+      }
+      if (cleanHit != null) {
+        foods.add({
+          'name': cleanHit.group(0)!,
+          'quantity': '1 serving',
+          'quality_score': 'clean',
+        });
+      }
+      if (denseHit == null && cleanHit == null) {
+        foods.add({
+          'name': 'Meal',
+          'quantity': '',
+          'quality_score': 'moderate',
+        });
+      }
+    }
+
+    final minutes =
+        RegExp(r'(\d+)\s*(?:min|minute)').firstMatch(text)?.group(1);
+    final move =
+        RegExp(r'\b(walk(?:ed)?|run|ran|gym|workout|yoga|cycled?|swam|swim)\b')
+            .firstMatch(text);
+    if (move != null) {
+      final vigorous = RegExp(r'run|ran|gym|workout|swim|swam').hasMatch(text);
+      exercise.add({
+        'activity': move.group(0)!,
+        'duration_minutes': int.tryParse(minutes ?? '') ?? 20,
+        'intensity': vigorous ? 'vigorous' : 'moderate',
+      });
+    }
+
+    final spike = foods.any((f) => f['quality_score'] == 'dense');
+    final reply = {
+      'log_summary': {
+        'food_items': foods,
+        'beverages': beverages,
+        'hydration_added_ml': hydration,
+        'exercise_logged': exercise,
+      },
+      'energy_impact_analysis': {
+        'glycemic_load_estimate': spike
+            ? 'high_spike'
+            : (foods.isNotEmpty || beverages.isNotEmpty ? 'steady' : 'flat'),
+        'post_meal_action_required': spike,
+        'recommended_walk_minutes': spike ? 12 : 0,
+      },
+      'coaching_message': spike
+          ? "Logged! That one's carb-dense — a 12-minute walk keeps the "
+              'energy curve steady instead of spiky.'
+          : 'Logged! Clean fuel keeps the afternoon steady — nice.',
+    };
+    return jsonEncode(reply);
+  }
+}
+
+class CoachOutcome {
+  const CoachOutcome({this.reply, required this.backendUsed, this.rawText});
+
+  /// Parsed structured reply; null means both backends failed and the
+  /// transcript should be logged as raw text (spec §1 last resort).
+  final CoachReply? reply;
+  final String backendUsed;
+  final String? rawText;
+}
+
+/// Fallback chain (spec §0/§1): primary Claude → retry once with a
+/// fix-the-JSON instruction → Gemini Flash fallback → raw-text logging.
+class LlmCoach {
+  LlmCoach({required this.primary, required this.fallback});
+
+  final LlmBackend primary;
+  final LlmBackend fallback;
+
+  static const _fixInstruction =
+      '\n\nYour previous reply was not valid JSON matching the contract. '
+      'Reply again with ONLY the valid JSON object.';
+
+  Future<CoachOutcome> process(String transcript) async {
+    for (final backend in [primary, fallback]) {
+      try {
+        final first = await backend.complete(transcript);
+        try {
+          return CoachOutcome(
+              reply: parseCoachReply(first), backendUsed: backend.name);
+        } on FormatException {
+          final retry =
+              await backend.complete('$transcript$_fixInstruction');
+          return CoachOutcome(
+              reply: parseCoachReply(retry), backendUsed: backend.name);
+        }
+      } catch (_) {
+        continue; // transport or double parse failure → next backend
+      }
+    }
+    return CoachOutcome(
+        reply: null, backendUsed: 'none', rawText: transcript);
+  }
+}

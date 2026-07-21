@@ -89,6 +89,31 @@ Non-negotiables from §0 are not re-litigated here.
 - **Auth events audited** (sign-in method, sign-out, unlocks) in the same
   append-only table.
 
+## M4 — Voice pipeline (2026-07-21)
+
+- **System prompt bundled verbatim** at assets/pulsiq_system_prompt.txt
+  (spec §1); the deployed proxy injects its own copy server-side.
+- **Until the proxy URL exists** (`--dart-define=PULSIQ_PROXY_URL=…`), both
+  slots of the Claude→Gemini fallback chain run a deterministic on-device
+  mock that emits contract-valid JSON from transcript keywords, so the full
+  pipeline (STT → parse → validate → insert → rings) runs offline today.
+- **Contract validation client-side too** — the backend validates per spec,
+  but the app re-validates because malformed rows must never hit the DB.
+  Parser accepts bare JSON, fenced JSON, or JSON embedded in prose; one
+  fix-the-JSON retry per backend; final fallback logs the raw transcript
+  as a "Voice note (unparsed)" entry.
+- **Beverages in the contract carry no volume**; hydration arrives
+  separately in hydration_added_ml. Water-type beverages therefore insert
+  with volume 0 (no double count) and diuretics get typical serving
+  volumes (caffeine 240 ml / alcohol 330 ml / protein 300 ml) for the 1:1
+  hydration-target offset.
+- **STT**: on-device speech_to_text with partial results streaming into
+  the hold-to-record overlay; confidence floor 0.5 marks where the Whisper
+  API fallback will route once the proxy exists. Caffeine parsed from a
+  voice note schedules the same +2h reminder as manual logging.
+- **"PulsIQ is thinking" chip** floats above the FAB and never blocks
+  further logging — the LLM round-trip runs detached.
+
 - **Verification gap:** M1's "runs on iOS simulator + Android emulator"
   criterion cannot be met on this machine yet — Xcode is only partially
   installed (needs App Store install + `xcodebuild -runFirstLaunch`) and there

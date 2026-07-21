@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
+import '../../voice/voice_pipeline.dart';
 import '../../widgets/pulse_wave.dart';
 import '../../widgets/universal_fab.dart';
 
@@ -39,6 +40,7 @@ class _PulsIQShellState extends ConsumerState<PulsIQShell> {
       _recording = true;
       _elapsedSeconds = 0;
     });
+    ref.read(voicePipelineProvider.notifier).startListening();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_elapsedSeconds + 1 >= _maxRecordSeconds) {
         _stopRecording();
@@ -53,7 +55,7 @@ class _PulsIQShellState extends ConsumerState<PulsIQShell> {
     _ticker = null;
     if (!_recording) return;
     setState(() => _recording = false);
-    _toast(const Text('Voice note captured — transcription lands in M4.'));
+    ref.read(voicePipelineProvider.notifier).stopAndSubmit();
   }
 
   Future<void> _quickWater() async {
@@ -94,12 +96,30 @@ class _PulsIQShellState extends ConsumerState<PulsIQShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Coaching messages arrive whenever the detached LLM round-trip lands.
+    ref.listen(voicePipelineProvider, (previous, next) {
+      final message = next.coachingMessage;
+      if (message != null && message != previous?.coachingMessage) {
+        _toast(Text(message));
+        ref.read(voicePipelineProvider.notifier).consumeMessage();
+      }
+    });
+    final voice = ref.watch(voicePipelineProvider);
     return Scaffold(
       body: Stack(
         children: [
           widget.child,
+          if (voice.phase == VoicePhase.thinking)
+            const Positioned(
+              right: 20,
+              bottom: 96,
+              child: _ThinkingChip(),
+            ),
           if (_recording)
-            _RecordingOverlay(elapsedSeconds: _elapsedSeconds),
+            _RecordingOverlay(
+              elapsedSeconds: _elapsedSeconds,
+              transcript: voice.transcript,
+            ),
         ],
       ),
       floatingActionButton: UniversalFab(
@@ -117,10 +137,43 @@ class _PulsIQShellState extends ConsumerState<PulsIQShell> {
   }
 }
 
+class _ThinkingChip extends StatelessWidget {
+  const _ThinkingChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text('PulsIQ is thinking…', style: theme.textTheme.labelMedium),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _RecordingOverlay extends StatelessWidget {
-  const _RecordingOverlay({required this.elapsedSeconds});
+  const _RecordingOverlay({
+    required this.elapsedSeconds,
+    required this.transcript,
+  });
 
   final int elapsedSeconds;
+  final String transcript;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +202,16 @@ class _RecordingOverlay extends StatelessWidget {
                     const SizedBox(height: 16),
                     const PulseWave(height: 64, strokeWidth: 3),
                     const SizedBox(height: 16),
+                    if (transcript.isNotEmpty) ...[
+                      Text(
+                        transcript,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Text(
                       '0:${elapsedSeconds.toString().padLeft(2, '0')} / 1:00',
                       style: theme.textTheme.bodyMedium,

@@ -6,6 +6,9 @@ import 'package:pulsiq/app.dart';
 import 'package:pulsiq/data/db/app_database.dart';
 import 'package:pulsiq/data/providers.dart';
 import 'package:pulsiq/features/logging/entry_sheet.dart';
+import 'package:pulsiq/voice/stt_service.dart';
+
+import 'voice_pipeline_test.dart' show FakeStt;
 
 const _fab = ValueKey('universal-fab');
 
@@ -15,7 +18,10 @@ Future<AppDatabase> pumpApp(WidgetTester tester) async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
   addTearDown(db.close);
   await tester.pumpWidget(ProviderScope(
-    overrides: [appDatabaseProvider.overrideWithValue(db)],
+    overrides: [
+      appDatabaseProvider.overrideWithValue(db),
+      sttServiceProvider.overrideWithValue(FakeStt('drank 500 ml water')),
+    ],
     child: const PulsIQApp(),
   ));
   return db;
@@ -145,20 +151,24 @@ void main() {
     await disposeApp(tester);
   });
 
-  testWidgets('FAB hold shows recording overlay, release submits',
-      (tester) async {
+  testWidgets('FAB hold records, release runs the voice pipeline into '
+      'the DB and rings', (tester) async {
     await pumpApp(tester);
     await pumpToDashboard(tester);
     final gesture =
         await tester.startGesture(tester.getCenter(find.byKey(_fab)));
     await tester.pump(const Duration(milliseconds: 700));
     expect(find.text('Release to submit'), findsOneWidget);
+    // Live transcript from on-device STT shows in the overlay.
+    await pumpUntil(tester, find.text('drank 500 ml water'));
+    expect(find.text('drank 500 ml water'), findsOneWidget);
 
     await gesture.up();
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    // Mock LLM parses the note; optimistic insert updates the ring.
+    await pumpUntil(tester, find.text('500 / 2000 ml'));
     expect(find.text('Release to submit'), findsNothing);
-    expect(find.textContaining('Voice note captured'), findsOneWidget);
+    expect(find.text('500 / 2000 ml'), findsOneWidget);
     await disposeApp(tester);
   });
 
