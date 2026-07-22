@@ -3146,6 +3146,566 @@ class WeatherCacheRowsCompanion extends UpdateCompanion<WeatherCacheRow> {
   }
 }
 
+class $MealCacheRowsTable extends MealCacheRows
+    with TableInfo<$MealCacheRowsTable, MealCacheRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MealCacheRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _queryMeta = const VerificationMeta('query');
+  @override
+  late final GeneratedColumn<String> query = GeneratedColumn<String>(
+    'query',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _caloriesKcalMeta = const VerificationMeta(
+    'caloriesKcal',
+  );
+  @override
+  late final GeneratedColumn<int> caloriesKcal = GeneratedColumn<int>(
+    'calories_kcal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _proteinGMeta = const VerificationMeta(
+    'proteinG',
+  );
+  @override
+  late final GeneratedColumn<double> proteinG = GeneratedColumn<double>(
+    'protein_g',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fiberGMeta = const VerificationMeta('fiberG');
+  @override
+  late final GeneratedColumn<double> fiberG = GeneratedColumn<double>(
+    'fiber_g',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _carbsGMeta = const VerificationMeta('carbsG');
+  @override
+  late final GeneratedColumn<double> carbsG = GeneratedColumn<double>(
+    'carbs_g',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fatGMeta = const VerificationMeta('fatG');
+  @override
+  late final GeneratedColumn<double> fatG = GeneratedColumn<double>(
+    'fat_g',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _qualityMeta = const VerificationMeta(
+    'quality',
+  );
+  @override
+  late final GeneratedColumn<String> quality = GeneratedColumn<String>(
+    'quality',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hitCountMeta = const VerificationMeta(
+    'hitCount',
+  );
+  @override
+  late final GeneratedColumn<int> hitCount = GeneratedColumn<int>(
+    'hit_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _lastUsedMeta = const VerificationMeta(
+    'lastUsed',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastUsed = GeneratedColumn<DateTime>(
+    'last_used',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    query,
+    caloriesKcal,
+    proteinG,
+    fiberG,
+    carbsG,
+    fatG,
+    quality,
+    hitCount,
+    lastUsed,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'meal_cache_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MealCacheRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('query')) {
+      context.handle(
+        _queryMeta,
+        query.isAcceptableOrUnknown(data['query']!, _queryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_queryMeta);
+    }
+    if (data.containsKey('calories_kcal')) {
+      context.handle(
+        _caloriesKcalMeta,
+        caloriesKcal.isAcceptableOrUnknown(
+          data['calories_kcal']!,
+          _caloriesKcalMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_caloriesKcalMeta);
+    }
+    if (data.containsKey('protein_g')) {
+      context.handle(
+        _proteinGMeta,
+        proteinG.isAcceptableOrUnknown(data['protein_g']!, _proteinGMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_proteinGMeta);
+    }
+    if (data.containsKey('fiber_g')) {
+      context.handle(
+        _fiberGMeta,
+        fiberG.isAcceptableOrUnknown(data['fiber_g']!, _fiberGMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fiberGMeta);
+    }
+    if (data.containsKey('carbs_g')) {
+      context.handle(
+        _carbsGMeta,
+        carbsG.isAcceptableOrUnknown(data['carbs_g']!, _carbsGMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_carbsGMeta);
+    }
+    if (data.containsKey('fat_g')) {
+      context.handle(
+        _fatGMeta,
+        fatG.isAcceptableOrUnknown(data['fat_g']!, _fatGMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fatGMeta);
+    }
+    if (data.containsKey('quality')) {
+      context.handle(
+        _qualityMeta,
+        quality.isAcceptableOrUnknown(data['quality']!, _qualityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_qualityMeta);
+    }
+    if (data.containsKey('hit_count')) {
+      context.handle(
+        _hitCountMeta,
+        hitCount.isAcceptableOrUnknown(data['hit_count']!, _hitCountMeta),
+      );
+    }
+    if (data.containsKey('last_used')) {
+      context.handle(
+        _lastUsedMeta,
+        lastUsed.isAcceptableOrUnknown(data['last_used']!, _lastUsedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lastUsedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {query};
+  @override
+  MealCacheRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MealCacheRow(
+      query: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}query'],
+      )!,
+      caloriesKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calories_kcal'],
+      )!,
+      proteinG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}protein_g'],
+      )!,
+      fiberG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fiber_g'],
+      )!,
+      carbsG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}carbs_g'],
+      )!,
+      fatG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fat_g'],
+      )!,
+      quality: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quality'],
+      )!,
+      hitCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}hit_count'],
+      )!,
+      lastUsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_used'],
+      )!,
+    );
+  }
+
+  @override
+  $MealCacheRowsTable createAlias(String alias) {
+    return $MealCacheRowsTable(attachedDatabase, alias);
+  }
+}
+
+class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
+  final String query;
+  final int caloriesKcal;
+  final double proteinG;
+  final double fiberG;
+  final double carbsG;
+  final double fatG;
+  final String quality;
+  final int hitCount;
+  final DateTime lastUsed;
+  const MealCacheRow({
+    required this.query,
+    required this.caloriesKcal,
+    required this.proteinG,
+    required this.fiberG,
+    required this.carbsG,
+    required this.fatG,
+    required this.quality,
+    required this.hitCount,
+    required this.lastUsed,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['query'] = Variable<String>(query);
+    map['calories_kcal'] = Variable<int>(caloriesKcal);
+    map['protein_g'] = Variable<double>(proteinG);
+    map['fiber_g'] = Variable<double>(fiberG);
+    map['carbs_g'] = Variable<double>(carbsG);
+    map['fat_g'] = Variable<double>(fatG);
+    map['quality'] = Variable<String>(quality);
+    map['hit_count'] = Variable<int>(hitCount);
+    map['last_used'] = Variable<DateTime>(lastUsed);
+    return map;
+  }
+
+  MealCacheRowsCompanion toCompanion(bool nullToAbsent) {
+    return MealCacheRowsCompanion(
+      query: Value(query),
+      caloriesKcal: Value(caloriesKcal),
+      proteinG: Value(proteinG),
+      fiberG: Value(fiberG),
+      carbsG: Value(carbsG),
+      fatG: Value(fatG),
+      quality: Value(quality),
+      hitCount: Value(hitCount),
+      lastUsed: Value(lastUsed),
+    );
+  }
+
+  factory MealCacheRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MealCacheRow(
+      query: serializer.fromJson<String>(json['query']),
+      caloriesKcal: serializer.fromJson<int>(json['caloriesKcal']),
+      proteinG: serializer.fromJson<double>(json['proteinG']),
+      fiberG: serializer.fromJson<double>(json['fiberG']),
+      carbsG: serializer.fromJson<double>(json['carbsG']),
+      fatG: serializer.fromJson<double>(json['fatG']),
+      quality: serializer.fromJson<String>(json['quality']),
+      hitCount: serializer.fromJson<int>(json['hitCount']),
+      lastUsed: serializer.fromJson<DateTime>(json['lastUsed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'query': serializer.toJson<String>(query),
+      'caloriesKcal': serializer.toJson<int>(caloriesKcal),
+      'proteinG': serializer.toJson<double>(proteinG),
+      'fiberG': serializer.toJson<double>(fiberG),
+      'carbsG': serializer.toJson<double>(carbsG),
+      'fatG': serializer.toJson<double>(fatG),
+      'quality': serializer.toJson<String>(quality),
+      'hitCount': serializer.toJson<int>(hitCount),
+      'lastUsed': serializer.toJson<DateTime>(lastUsed),
+    };
+  }
+
+  MealCacheRow copyWith({
+    String? query,
+    int? caloriesKcal,
+    double? proteinG,
+    double? fiberG,
+    double? carbsG,
+    double? fatG,
+    String? quality,
+    int? hitCount,
+    DateTime? lastUsed,
+  }) => MealCacheRow(
+    query: query ?? this.query,
+    caloriesKcal: caloriesKcal ?? this.caloriesKcal,
+    proteinG: proteinG ?? this.proteinG,
+    fiberG: fiberG ?? this.fiberG,
+    carbsG: carbsG ?? this.carbsG,
+    fatG: fatG ?? this.fatG,
+    quality: quality ?? this.quality,
+    hitCount: hitCount ?? this.hitCount,
+    lastUsed: lastUsed ?? this.lastUsed,
+  );
+  MealCacheRow copyWithCompanion(MealCacheRowsCompanion data) {
+    return MealCacheRow(
+      query: data.query.present ? data.query.value : this.query,
+      caloriesKcal: data.caloriesKcal.present
+          ? data.caloriesKcal.value
+          : this.caloriesKcal,
+      proteinG: data.proteinG.present ? data.proteinG.value : this.proteinG,
+      fiberG: data.fiberG.present ? data.fiberG.value : this.fiberG,
+      carbsG: data.carbsG.present ? data.carbsG.value : this.carbsG,
+      fatG: data.fatG.present ? data.fatG.value : this.fatG,
+      quality: data.quality.present ? data.quality.value : this.quality,
+      hitCount: data.hitCount.present ? data.hitCount.value : this.hitCount,
+      lastUsed: data.lastUsed.present ? data.lastUsed.value : this.lastUsed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MealCacheRow(')
+          ..write('query: $query, ')
+          ..write('caloriesKcal: $caloriesKcal, ')
+          ..write('proteinG: $proteinG, ')
+          ..write('fiberG: $fiberG, ')
+          ..write('carbsG: $carbsG, ')
+          ..write('fatG: $fatG, ')
+          ..write('quality: $quality, ')
+          ..write('hitCount: $hitCount, ')
+          ..write('lastUsed: $lastUsed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    query,
+    caloriesKcal,
+    proteinG,
+    fiberG,
+    carbsG,
+    fatG,
+    quality,
+    hitCount,
+    lastUsed,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MealCacheRow &&
+          other.query == this.query &&
+          other.caloriesKcal == this.caloriesKcal &&
+          other.proteinG == this.proteinG &&
+          other.fiberG == this.fiberG &&
+          other.carbsG == this.carbsG &&
+          other.fatG == this.fatG &&
+          other.quality == this.quality &&
+          other.hitCount == this.hitCount &&
+          other.lastUsed == this.lastUsed);
+}
+
+class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
+  final Value<String> query;
+  final Value<int> caloriesKcal;
+  final Value<double> proteinG;
+  final Value<double> fiberG;
+  final Value<double> carbsG;
+  final Value<double> fatG;
+  final Value<String> quality;
+  final Value<int> hitCount;
+  final Value<DateTime> lastUsed;
+  final Value<int> rowid;
+  const MealCacheRowsCompanion({
+    this.query = const Value.absent(),
+    this.caloriesKcal = const Value.absent(),
+    this.proteinG = const Value.absent(),
+    this.fiberG = const Value.absent(),
+    this.carbsG = const Value.absent(),
+    this.fatG = const Value.absent(),
+    this.quality = const Value.absent(),
+    this.hitCount = const Value.absent(),
+    this.lastUsed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MealCacheRowsCompanion.insert({
+    required String query,
+    required int caloriesKcal,
+    required double proteinG,
+    required double fiberG,
+    required double carbsG,
+    required double fatG,
+    required String quality,
+    this.hitCount = const Value.absent(),
+    required DateTime lastUsed,
+    this.rowid = const Value.absent(),
+  }) : query = Value(query),
+       caloriesKcal = Value(caloriesKcal),
+       proteinG = Value(proteinG),
+       fiberG = Value(fiberG),
+       carbsG = Value(carbsG),
+       fatG = Value(fatG),
+       quality = Value(quality),
+       lastUsed = Value(lastUsed);
+  static Insertable<MealCacheRow> custom({
+    Expression<String>? query,
+    Expression<int>? caloriesKcal,
+    Expression<double>? proteinG,
+    Expression<double>? fiberG,
+    Expression<double>? carbsG,
+    Expression<double>? fatG,
+    Expression<String>? quality,
+    Expression<int>? hitCount,
+    Expression<DateTime>? lastUsed,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (query != null) 'query': query,
+      if (caloriesKcal != null) 'calories_kcal': caloriesKcal,
+      if (proteinG != null) 'protein_g': proteinG,
+      if (fiberG != null) 'fiber_g': fiberG,
+      if (carbsG != null) 'carbs_g': carbsG,
+      if (fatG != null) 'fat_g': fatG,
+      if (quality != null) 'quality': quality,
+      if (hitCount != null) 'hit_count': hitCount,
+      if (lastUsed != null) 'last_used': lastUsed,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MealCacheRowsCompanion copyWith({
+    Value<String>? query,
+    Value<int>? caloriesKcal,
+    Value<double>? proteinG,
+    Value<double>? fiberG,
+    Value<double>? carbsG,
+    Value<double>? fatG,
+    Value<String>? quality,
+    Value<int>? hitCount,
+    Value<DateTime>? lastUsed,
+    Value<int>? rowid,
+  }) {
+    return MealCacheRowsCompanion(
+      query: query ?? this.query,
+      caloriesKcal: caloriesKcal ?? this.caloriesKcal,
+      proteinG: proteinG ?? this.proteinG,
+      fiberG: fiberG ?? this.fiberG,
+      carbsG: carbsG ?? this.carbsG,
+      fatG: fatG ?? this.fatG,
+      quality: quality ?? this.quality,
+      hitCount: hitCount ?? this.hitCount,
+      lastUsed: lastUsed ?? this.lastUsed,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (query.present) {
+      map['query'] = Variable<String>(query.value);
+    }
+    if (caloriesKcal.present) {
+      map['calories_kcal'] = Variable<int>(caloriesKcal.value);
+    }
+    if (proteinG.present) {
+      map['protein_g'] = Variable<double>(proteinG.value);
+    }
+    if (fiberG.present) {
+      map['fiber_g'] = Variable<double>(fiberG.value);
+    }
+    if (carbsG.present) {
+      map['carbs_g'] = Variable<double>(carbsG.value);
+    }
+    if (fatG.present) {
+      map['fat_g'] = Variable<double>(fatG.value);
+    }
+    if (quality.present) {
+      map['quality'] = Variable<String>(quality.value);
+    }
+    if (hitCount.present) {
+      map['hit_count'] = Variable<int>(hitCount.value);
+    }
+    if (lastUsed.present) {
+      map['last_used'] = Variable<DateTime>(lastUsed.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MealCacheRowsCompanion(')
+          ..write('query: $query, ')
+          ..write('caloriesKcal: $caloriesKcal, ')
+          ..write('proteinG: $proteinG, ')
+          ..write('fiberG: $fiberG, ')
+          ..write('carbsG: $carbsG, ')
+          ..write('fatG: $fatG, ')
+          ..write('quality: $quality, ')
+          ..write('hitCount: $hitCount, ')
+          ..write('lastUsed: $lastUsed, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3165,6 +3725,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WeatherCacheRowsTable weatherCacheRows = $WeatherCacheRowsTable(
     this,
   );
+  late final $MealCacheRowsTable mealCacheRows = $MealCacheRowsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3178,6 +3739,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     auditEvents,
     appSettings,
     weatherCacheRows,
+    mealCacheRows,
   ];
 }
 
@@ -4882,6 +5444,284 @@ typedef $$WeatherCacheRowsTableProcessedTableManager =
       WeatherCacheRow,
       PrefetchHooks Function()
     >;
+typedef $$MealCacheRowsTableCreateCompanionBuilder =
+    MealCacheRowsCompanion Function({
+      required String query,
+      required int caloriesKcal,
+      required double proteinG,
+      required double fiberG,
+      required double carbsG,
+      required double fatG,
+      required String quality,
+      Value<int> hitCount,
+      required DateTime lastUsed,
+      Value<int> rowid,
+    });
+typedef $$MealCacheRowsTableUpdateCompanionBuilder =
+    MealCacheRowsCompanion Function({
+      Value<String> query,
+      Value<int> caloriesKcal,
+      Value<double> proteinG,
+      Value<double> fiberG,
+      Value<double> carbsG,
+      Value<double> fatG,
+      Value<String> quality,
+      Value<int> hitCount,
+      Value<DateTime> lastUsed,
+      Value<int> rowid,
+    });
+
+class $$MealCacheRowsTableFilterComposer
+    extends Composer<_$AppDatabase, $MealCacheRowsTable> {
+  $$MealCacheRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get proteinG => $composableBuilder(
+    column: $table.proteinG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fiberG => $composableBuilder(
+    column: $table.fiberG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get carbsG => $composableBuilder(
+    column: $table.carbsG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fatG => $composableBuilder(
+    column: $table.fatG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get hitCount => $composableBuilder(
+    column: $table.hitCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastUsed => $composableBuilder(
+    column: $table.lastUsed,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MealCacheRowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MealCacheRowsTable> {
+  $$MealCacheRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get proteinG => $composableBuilder(
+    column: $table.proteinG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fiberG => $composableBuilder(
+    column: $table.fiberG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get carbsG => $composableBuilder(
+    column: $table.carbsG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fatG => $composableBuilder(
+    column: $table.fatG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get hitCount => $composableBuilder(
+    column: $table.hitCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastUsed => $composableBuilder(
+    column: $table.lastUsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MealCacheRowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MealCacheRowsTable> {
+  $$MealCacheRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get query =>
+      $composableBuilder(column: $table.query, builder: (column) => column);
+
+  GeneratedColumn<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get proteinG =>
+      $composableBuilder(column: $table.proteinG, builder: (column) => column);
+
+  GeneratedColumn<double> get fiberG =>
+      $composableBuilder(column: $table.fiberG, builder: (column) => column);
+
+  GeneratedColumn<double> get carbsG =>
+      $composableBuilder(column: $table.carbsG, builder: (column) => column);
+
+  GeneratedColumn<double> get fatG =>
+      $composableBuilder(column: $table.fatG, builder: (column) => column);
+
+  GeneratedColumn<String> get quality =>
+      $composableBuilder(column: $table.quality, builder: (column) => column);
+
+  GeneratedColumn<int> get hitCount =>
+      $composableBuilder(column: $table.hitCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastUsed =>
+      $composableBuilder(column: $table.lastUsed, builder: (column) => column);
+}
+
+class $$MealCacheRowsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MealCacheRowsTable,
+          MealCacheRow,
+          $$MealCacheRowsTableFilterComposer,
+          $$MealCacheRowsTableOrderingComposer,
+          $$MealCacheRowsTableAnnotationComposer,
+          $$MealCacheRowsTableCreateCompanionBuilder,
+          $$MealCacheRowsTableUpdateCompanionBuilder,
+          (
+            MealCacheRow,
+            BaseReferences<_$AppDatabase, $MealCacheRowsTable, MealCacheRow>,
+          ),
+          MealCacheRow,
+          PrefetchHooks Function()
+        > {
+  $$MealCacheRowsTableTableManager(_$AppDatabase db, $MealCacheRowsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MealCacheRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MealCacheRowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MealCacheRowsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> query = const Value.absent(),
+                Value<int> caloriesKcal = const Value.absent(),
+                Value<double> proteinG = const Value.absent(),
+                Value<double> fiberG = const Value.absent(),
+                Value<double> carbsG = const Value.absent(),
+                Value<double> fatG = const Value.absent(),
+                Value<String> quality = const Value.absent(),
+                Value<int> hitCount = const Value.absent(),
+                Value<DateTime> lastUsed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MealCacheRowsCompanion(
+                query: query,
+                caloriesKcal: caloriesKcal,
+                proteinG: proteinG,
+                fiberG: fiberG,
+                carbsG: carbsG,
+                fatG: fatG,
+                quality: quality,
+                hitCount: hitCount,
+                lastUsed: lastUsed,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String query,
+                required int caloriesKcal,
+                required double proteinG,
+                required double fiberG,
+                required double carbsG,
+                required double fatG,
+                required String quality,
+                Value<int> hitCount = const Value.absent(),
+                required DateTime lastUsed,
+                Value<int> rowid = const Value.absent(),
+              }) => MealCacheRowsCompanion.insert(
+                query: query,
+                caloriesKcal: caloriesKcal,
+                proteinG: proteinG,
+                fiberG: fiberG,
+                carbsG: carbsG,
+                fatG: fatG,
+                quality: quality,
+                hitCount: hitCount,
+                lastUsed: lastUsed,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MealCacheRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MealCacheRowsTable,
+      MealCacheRow,
+      $$MealCacheRowsTableFilterComposer,
+      $$MealCacheRowsTableOrderingComposer,
+      $$MealCacheRowsTableAnnotationComposer,
+      $$MealCacheRowsTableCreateCompanionBuilder,
+      $$MealCacheRowsTableUpdateCompanionBuilder,
+      (
+        MealCacheRow,
+        BaseReferences<_$AppDatabase, $MealCacheRowsTable, MealCacheRow>,
+      ),
+      MealCacheRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4902,4 +5742,6 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$WeatherCacheRowsTableTableManager get weatherCacheRows =>
       $$WeatherCacheRowsTableTableManager(_db, _db.weatherCacheRows);
+  $$MealCacheRowsTableTableManager get mealCacheRows =>
+      $$MealCacheRowsTableTableManager(_db, _db.mealCacheRows);
 }

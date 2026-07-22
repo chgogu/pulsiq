@@ -94,6 +94,24 @@ class WeatherCacheRows extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Personal nutrition cache: a resolved meal keyed by its normalized text, so a
+/// repeat (or a once-hard, LLM-resolved) meal is $0 next time. Fills over time
+/// — the marginal cost of logging trends toward zero.
+class MealCacheRows extends Table {
+  TextColumn get query => text()(); // normalized description
+  IntColumn get caloriesKcal => integer()();
+  RealColumn get proteinG => real()();
+  RealColumn get fiberG => real()();
+  RealColumn get carbsG => real()();
+  RealColumn get fatG => real()();
+  TextColumn get quality => text()();
+  IntColumn get hitCount => integer().withDefault(const Constant(1))();
+  DateTimeColumn get lastUsed => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {query};
+}
+
 @DriftDatabase(
   tables: [
     FoodEntries,
@@ -104,6 +122,7 @@ class WeatherCacheRows extends Table {
     AuditEvents,
     AppSettings,
     WeatherCacheRows,
+    MealCacheRows,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -112,7 +131,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -131,8 +150,49 @@ class AppDatabase extends _$AppDatabase {
           if (from < 3) {
             await m.addColumn(beverageEntries, beverageEntries.caloriesKcal);
           }
+          // v4: personal nutrition cache.
+          if (from < 4) {
+            await m.createTable(mealCacheRows);
+          }
         },
       );
+
+  /// A cached resolve for [query] (normalized), bumping its hit count. Null on
+  /// a miss.
+  Future<MealCacheRow?> getMealCache(String query) async {
+    final row = await (select(mealCacheRows)
+          ..where((t) => t.query.equals(query)))
+        .getSingleOrNull();
+    if (row != null) {
+      await (update(mealCacheRows)..where((t) => t.query.equals(query))).write(
+        MealCacheRowsCompanion(
+          hitCount: Value(row.hitCount + 1),
+          lastUsed: Value(DateTime.now()),
+        ),
+      );
+    }
+    return row;
+  }
+
+  Future<void> putMealCache(
+    String query, {
+    required int caloriesKcal,
+    required double proteinG,
+    required double fiberG,
+    required double carbsG,
+    required double fatG,
+    required String quality,
+  }) =>
+      into(mealCacheRows).insertOnConflictUpdate(MealCacheRowsCompanion.insert(
+        query: query,
+        caloriesKcal: caloriesKcal,
+        proteinG: proteinG,
+        fiberG: fiberG,
+        carbsG: carbsG,
+        fatG: fatG,
+        quality: quality,
+        lastUsed: DateTime.now(),
+      ));
 
   static DateTime startOfToday() {
     final now = DateTime.now();

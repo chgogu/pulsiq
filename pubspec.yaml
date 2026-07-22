@@ -84,6 +84,7 @@ flutter:
 
   assets:
     - assets/pulsiq_system_prompt.txt
+    - assets/nutrition/foods.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:

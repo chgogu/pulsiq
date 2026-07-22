@@ -1,11 +1,18 @@
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/food_db.dart';
 import '../domain/meal_vision.dart';
 import '../llm/llm_client.dart';
 import '../voice/voice_pipeline.dart' show llmCoachProvider;
-import 'db/app_database.dart' show FuelQuality;
+import 'db/app_database.dart' show AppDatabase, FuelQuality;
 import 'log_repository.dart';
 import 'providers.dart';
+
+/// The local food table, loaded once from the bundled asset. A Provider (not
+/// FutureProvider) so callers can hold the Future and await it lazily.
+final foodDbProvider = Provider<Future<FoodDb>>((ref) =>
+    rootBundle.loadString('assets/nutrition/foods.json').then(FoodDb.parse));
 
 /// The macros a written meal description resolves to, summed across the
 /// dish's components.
@@ -31,21 +38,65 @@ class MealEstimate {
   final int itemCount;
 }
 
-/// Turns a food description into nutrition numbers via the LLM, and can patch
-/// them onto an already-saved row. One place so the manual sheet, its inline
-/// "estimate" button, and the save-time auto-fill all behave identically.
+/// Resolves a food description to macros through a cost cascade
+/// (OFFLINE_NUTRITION_PROMPT): personal cache → local USDA table → Gemini.
+/// The frontier model only runs when the free local tiers give up, and every
+/// success is cached so the next identical meal is $0.
 class MealEstimator {
-  MealEstimator(this._coach, this._repo);
+  MealEstimator(this._coach, this._repo, this._db, this._foodDb);
 
   final LlmCoach _coach;
   final LogRepository _repo;
+  final AppDatabase _db;
+  final Future<FoodDb> _foodDb;
 
-  /// Estimate from text; null when both backends fail (offline with no
-  /// reachable proxy, and the description matched nothing in the mock table).
+  static String _normalize(String s) =>
+      s.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  /// Cache → local table → LLM. Null only when all three miss (offline, no
+  /// proxy, and nothing matched locally).
   Future<MealEstimate?> estimate(String description) async {
-    final text = description.trim();
-    if (text.isEmpty) return null;
-    final raw = await _coach.estimateMealFromText(text);
+    final query = _normalize(description);
+    if (query.isEmpty) return null;
+
+    // 0. Personal cache — the cheapest request is the one never made.
+    final cached = await _db.getMealCache(query);
+    if (cached != null) {
+      return MealEstimate(
+        caloriesKcal: cached.caloriesKcal,
+        proteinG: cached.proteinG,
+        fiberG: cached.fiberG,
+        carbsG: cached.carbsG,
+        fatG: cached.fatG,
+        quality: FuelQuality.values.byName(cached.quality),
+        lowConfidence: false,
+        itemCount: 1,
+      );
+    }
+
+    // 1. Local USDA table — $0, offline, ground-truth numbers.
+    try {
+      final local = (await _foodDb).resolve(query);
+      if (local != null) {
+        final est = MealEstimate(
+          caloriesKcal: local.caloriesKcal,
+          proteinG: local.proteinG,
+          fiberG: local.fiberG,
+          carbsG: local.carbsG,
+          fatG: local.fatG,
+          quality: FuelQuality.values.byName(local.quality),
+          lowConfidence: false,
+          itemCount: local.itemCount,
+        );
+        await _cache(query, est);
+        return est;
+      }
+    } catch (_) {
+      // asset missing / parse issue → just fall through to the model
+    }
+
+    // 2. Gemini — the escalation, only for what the table couldn't resolve.
+    final raw = await _coach.estimateMealFromText(description);
     if (raw == null) return null;
     final MealVisionResult result;
     try {
@@ -53,7 +104,7 @@ class MealEstimator {
     } catch (_) {
       return null;
     }
-    return MealEstimate(
+    final est = MealEstimate(
       caloriesKcal: result.totalCalories,
       proteinG: result.totalProtein,
       fiberG: result.totalFiber,
@@ -63,7 +114,20 @@ class MealEstimator {
       lowConfidence: result.lowConfidence,
       itemCount: result.items.length,
     );
+    // Cache the once-hard meal so it's free next time.
+    if (!est.lowConfidence) await _cache(query, est);
+    return est;
   }
+
+  Future<void> _cache(String query, MealEstimate est) => _db.putMealCache(
+        query,
+        caloriesKcal: est.caloriesKcal,
+        proteinG: est.proteinG,
+        fiberG: est.fiberG,
+        carbsG: est.carbsG,
+        fatG: est.fatG,
+        quality: est.quality.name,
+      );
 
   /// Fire-and-forget: estimate [description] and write the macros onto row
   /// [foodId]. Silently does nothing on failure — the row keeps its (empty)
@@ -96,5 +160,7 @@ final mealEstimatorProvider = Provider<MealEstimator>(
   (ref) => MealEstimator(
     ref.read(llmCoachProvider),
     ref.read(logRepositoryProvider),
+    ref.read(appDatabaseProvider),
+    ref.read(foodDbProvider),
   ),
 );
