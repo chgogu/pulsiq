@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
 
     <application
-        android:label="pulsiq"
+        android:label="PulsIQ"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

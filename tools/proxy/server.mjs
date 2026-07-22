@@ -393,9 +393,17 @@ createServer((req, res) => {
                 scope: WHOOP.scopes,
               };
         const { status, json } = await whoopToken(params);
-        console.log(`${req.url} -> ${status} in ${Date.now() - started}ms`);
+        // Log status + WHOOP's error reason (never token values) so a failed
+        // refresh is diagnosable.
+        const reason =
+          status === 200
+            ? 'ok'
+            : `${json.error ?? '?'}: ${json.error_description ?? ''}`.trim();
+        console.log(
+          `${req.url} -> ${status} (${reason}) in ${Date.now() - started}ms`,
+        );
         // Pass WHOOP's status through so the app can tell "bad code" from
-        // "network down". Never log token values.
+        // "network down".
         send(status === 200 ? 200 : 502, json);
       } catch (err) {
         console.error(`${req.url} FAILED:`, err?.message ?? err);

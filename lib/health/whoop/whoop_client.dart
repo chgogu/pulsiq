@@ -50,6 +50,7 @@ class WhoopAuth {
   }) _authenticate;
 
   WhoopTokens? _tokens; // in-memory access-token cache
+  Future<String?>? _refreshing; // single-flight guard
 
   static Future<String> _defaultAuthenticate({
     required String url,
@@ -60,8 +61,15 @@ class WhoopAuth {
 
   bool get _configured => _proxyUrl.isNotEmpty;
 
-  Future<bool> isConnected() async =>
-      (await _store.read(whoopRefreshTokenKey)) != null;
+  Future<bool> isConnected() async {
+    // A keychain read that throws (e.g. no plugin in a test, or a locked
+    // device) means "not linked" rather than a crashed dashboard.
+    try {
+      return (await _store.read(whoopRefreshTokenKey)) != null;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Full OAuth flow. Returns true only if we end up with a persisted refresh
   /// token (i.e. the `offline` scope was granted).
@@ -114,12 +122,21 @@ class WhoopAuth {
 
   /// A valid access token, refreshing via the proxy when the cached one is
   /// stale. Null if disconnected or the refresh fails.
+  ///
+  /// WHOOP rotates the refresh token and invalidates the old one on every use,
+  /// so a second concurrent refresh with the same token 500s. The single-flight
+  /// guard makes overlapping callers await one refresh instead of racing.
   Future<String?> accessToken() async {
     final cached = _tokens;
     if (cached != null && !cached.isExpired(DateTime.now())) {
       return cached.accessToken;
     }
     if (!_configured) return null;
+    return _refreshing ??= _refresh()
+      ..whenComplete(() => _refreshing = null);
+  }
+
+  Future<String?> _refresh() async {
     final refresh = await _store.read(whoopRefreshTokenKey);
     if (refresh == null) return null;
     try {
@@ -131,12 +148,12 @@ class WhoopAuth {
       if (res.statusCode != 200) return null;
       final tokens =
           WhoopTokens.parse(jsonDecode(res.body) as Map<String, dynamic>);
-      _tokens = tokens;
-      // WHOOP rotates refresh tokens — persist the new one so the old,
-      // now-invalid one isn't reused on the next launch.
+      // Persist the rotated token BEFORE returning, so the old (now-dead) one
+      // is never read again on the next launch.
       if (tokens.refreshToken != null) {
         await _store.write(whoopRefreshTokenKey, tokens.refreshToken!);
       }
+      _tokens = tokens;
       return tokens.accessToken;
     } catch (_) {
       return null;
@@ -147,6 +164,16 @@ class WhoopAuth {
     final rng = Random.secure();
     return List.generate(16, (_) => rng.nextInt(16).toRadixString(16)).join();
   }
+}
+
+/// Why a snapshot fetch produced what it did — lets the card show a precise
+/// state instead of a silent blank.
+enum WhoopFetchStatus { ok, noAccess, empty, error }
+
+class WhoopFetchResult {
+  const WhoopFetchResult(this.status, {this.snapshot});
+  final WhoopFetchStatus status;
+  final WhoopSnapshot? snapshot;
 }
 
 /// Reads WHOOP recovery + sleep as daily biometrics. Implements the same
@@ -174,6 +201,29 @@ class WhoopHealthSource implements HealthSource {
       return mapWhoopDaily(recovery: recovery, sleep: sleep);
     } catch (_) {
       return const [];
+    }
+  }
+
+  /// The richest recent reading for the dashboard card — latest recovery,
+  /// sleep, and cycle over the last two weeks — with a status so the UI can
+  /// distinguish "no token", "no data yet", and "fetch failed".
+  Future<WhoopFetchResult> fetchSnapshot() async {
+    final token = await _auth.accessToken();
+    if (token == null) return const WhoopFetchResult(WhoopFetchStatus.noAccess);
+    try {
+      final now = DateTime.now();
+      final from = now.subtract(const Duration(days: 14));
+      final recovery = await _collection('/v1/recovery', from, now, token);
+      final sleep = await _collection('/v1/activity/sleep', from, now, token);
+      final cycle = await _collection('/v1/cycle', from, now, token);
+      final snap = latestWhoopSnapshot(
+          recovery: recovery, sleep: sleep, cycle: cycle);
+      if (snap == null || snap.isEmpty) {
+        return const WhoopFetchResult(WhoopFetchStatus.empty);
+      }
+      return WhoopFetchResult(WhoopFetchStatus.ok, snapshot: snap);
+    } catch (_) {
+      return const WhoopFetchResult(WhoopFetchStatus.error);
     }
   }
 

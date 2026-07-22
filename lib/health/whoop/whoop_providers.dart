@@ -37,5 +37,15 @@ final whoopDisconnectProvider = Provider<Future<void> Function()>((ref) {
   return () async {
     await ref.read(whoopAuthProvider).disconnect();
     ref.invalidate(whoopConnectedProvider);
+    ref.invalidate(whoopSnapshotProvider);
   };
+});
+
+/// The dashboard WHOOP card's data. Null when WHOOP isn't linked (card hides);
+/// otherwise a result carrying the latest snapshot or a precise empty/error
+/// state.
+final whoopSnapshotProvider = FutureProvider<WhoopFetchResult?>((ref) async {
+  final connected = await ref.watch(whoopConnectedProvider.future);
+  if (!connected) return null;
+  return WhoopHealthSource(ref.read(whoopAuthProvider)).fetchSnapshot();
 });

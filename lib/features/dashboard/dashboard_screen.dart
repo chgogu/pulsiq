@@ -16,6 +16,7 @@ import 'morning_reset_card.dart';
 import 'pulse_card.dart';
 import 'score_hero.dart';
 import 'spark_card.dart';
+import 'whoop_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -56,6 +57,9 @@ class DashboardScreen extends ConsumerWidget {
           const MorningResetCard(),
           ScoreHero(result: score),
           const SizedBox(height: 16),
+          // WHOOP recovery leads when linked — it's the biometric headline.
+          // Hides itself entirely when WHOOP isn't connected.
+          const WhoopCard(),
           // Fuel and its interpretation sit directly under the score: this is
           // the food data the user came to see, and burying it under the
           // forecast/walk cards meant it never made it above the fold.

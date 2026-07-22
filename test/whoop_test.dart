@@ -11,8 +11,8 @@ Map<String, dynamic> recovery(String createdAt, {double? hrv, double? rhr}) => {
       'score_state': 'SCORED',
       'created_at': createdAt,
       'score': {
-        if (hrv != null) 'hrv_rmssd_milli': hrv,
-        if (rhr != null) 'resting_heart_rate': rhr,
+        'hrv_rmssd_milli': ?hrv,
+        'resting_heart_rate': ?rhr,
         'recovery_score': 66,
       },
     };
@@ -34,8 +34,8 @@ Map<String, dynamic> sleep(
           'total_in_bed_time_milli': inBedMs,
           'total_awake_time_milli': awakeMs,
         },
-        if (efficiency != null) 'sleep_efficiency_percentage': efficiency,
-        if (respiratory != null) 'respiratory_rate': respiratory,
+        'sleep_efficiency_percentage': ?efficiency,
+        'respiratory_rate': ?respiratory,
       },
     };
 
@@ -132,6 +132,95 @@ void main() {
     });
   });
 
+  Map<String, dynamic> cycle(String start, {double? strain, double? avgHr}) => {
+        'score_state': 'SCORED',
+        'start': start,
+        'score': {
+          'strain': ?strain,
+          'average_heart_rate': ?avgHr,
+        },
+      };
+
+  group('latest snapshot', () {
+    test('combines the newest recovery, sleep, and cycle', () {
+      final snap = latestWhoopSnapshot(
+        recovery: [
+          recovery('2026-07-19T07:00:00.000Z', hrv: 40, rhr: 60),
+          recovery('2026-07-21T07:00:00.000Z', hrv: 68, rhr: 52),
+        ],
+        sleep: [sleep('2026-07-21T06:30:00.000Z')],
+        cycle: [cycle('2026-07-20T05:00:00.000Z', strain: 14.2, avgHr: 88)],
+      )!;
+      // Newest recovery (the 21st) wins.
+      expect(snap.recoveryPct, 66);
+      expect(snap.hrvMs, 68);
+      expect(snap.restingHr, 52);
+      expect(snap.strain, 14.2);
+      expect(snap.avgHr, 88);
+      expect(snap.sleepHours, closeTo(7.5, 0.001));
+      expect(snap.daysOfData, 2);
+      expect(snap.band, RecoveryBand.yellow);
+    });
+
+    test('returns null when nothing is scored', () {
+      expect(
+        latestWhoopSnapshot(recovery: const [], sleep: const []),
+        isNull,
+      );
+    });
+
+    test('surfaces sleep even before recovery has computed', () {
+      final snap = latestWhoopSnapshot(
+        recovery: const [],
+        sleep: [sleep('2026-07-21T06:30:00.000Z', efficiency: 90)],
+      )!;
+      expect(snap.recoveryPct, isNull);
+      expect(snap.sleepHours, closeTo(7.5, 0.001));
+      expect(snap.isEmpty, isFalse);
+    });
+  });
+
+  group('recovery bands', () {
+    test('map to WHOOP thresholds', () {
+      expect(RecoveryBand.of(67), RecoveryBand.green);
+      expect(RecoveryBand.of(66), RecoveryBand.yellow);
+      expect(RecoveryBand.of(34), RecoveryBand.yellow);
+      expect(RecoveryBand.of(33), RecoveryBand.red);
+    });
+  });
+
+  group('smart insight', () {
+    WhoopSnapshot snap({int? rec, double? strain, double? sleep}) =>
+        WhoopSnapshot(
+          day: DateTime(2026, 7, 21),
+          recoveryPct: rec,
+          strain: strain,
+          sleepHours: sleep,
+        );
+
+    test('warns when strain was high on low recovery', () {
+      final msg = whoopInsight(snap(rec: 25, strain: 15));
+      expect(msg.toLowerCase(), contains('recovery day'));
+    });
+
+    test('greenlights pushing when primed and yesterday was light', () {
+      final msg = whoopInsight(snap(rec: 80, strain: 5));
+      expect(msg.toLowerCase(), contains('push'));
+    });
+
+    test('degrades gracefully with no recovery yet', () {
+      final msg = whoopInsight(snap(sleep: 7.2));
+      expect(msg, isNotEmpty);
+      expect(msg.toLowerCase(), contains('recovery'));
+    });
+
+    test('every band yields a non-empty read', () {
+      for (final r in [10, 50, 90]) {
+        expect(whoopInsight(snap(rec: r)).trim(), isNotEmpty);
+      }
+    });
+  });
+
   group('OAuth flow (fake browser + mock proxy)', () {
     late InMemorySecretStore store;
 
@@ -218,6 +307,34 @@ void main() {
       final auth = WhoopAuth(store: store, proxyUrl: 'http://proxy.test');
       await auth.disconnect();
       expect(await auth.isConnected(), isFalse);
+    });
+
+    test('concurrent token requests trigger only one refresh (WHOOP rotates '
+        'and 500s on a reused token)', () async {
+      await store.write(whoopRefreshTokenKey, 'r1');
+      var refreshes = 0;
+      final client = MockClient((req) async {
+        if (req.url.path == '/v1/whoop/refresh') {
+          refreshes++;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return http.Response(
+            jsonEncode({
+              'access_token': 'a$refreshes',
+              'refresh_token': 'r${refreshes + 1}',
+              'expires_in': 3600,
+            }),
+            200,
+          );
+        }
+        return http.Response('nf', 404);
+      });
+      final auth =
+          WhoopAuth(store: store, client: client, proxyUrl: 'http://proxy.test');
+      final results = await Future.wait([auth.accessToken(), auth.accessToken()]);
+      expect(refreshes, 1);
+      expect(results, ['a1', 'a1']);
+      // The rotated token was persisted, so the next launch won't reuse r1.
+      expect(await store.read(whoopRefreshTokenKey), 'r2');
     });
   });
 }

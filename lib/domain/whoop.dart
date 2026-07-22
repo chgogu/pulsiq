@@ -58,6 +58,66 @@ class WhoopProfile {
       );
 }
 
+/// WHOOP's recovery bands (green ≥67, yellow 34–66, red ≤33).
+enum RecoveryBand {
+  green,
+  yellow,
+  red;
+
+  static RecoveryBand of(num pct) =>
+      pct >= 67 ? RecoveryBand.green : (pct >= 34 ? RecoveryBand.yellow : RecoveryBand.red);
+
+  String get label => switch (this) {
+        RecoveryBand.green => 'Primed',
+        RecoveryBand.yellow => 'Moderate',
+        RecoveryBand.red => 'Take it easy',
+      };
+}
+
+/// The richest recent WHOOP reading — the latest scored recovery, plus the
+/// sleep and cycle that go with it. Drives the dashboard WHOOP card. Unlike
+/// [DailyBiometrics] (which feeds the baseline score and needs a same-day
+/// point), this deliberately surfaces the *most recent available* data so the
+/// card is never blank just because today's recovery hasn't computed yet.
+class WhoopSnapshot {
+  const WhoopSnapshot({
+    required this.day,
+    this.recoveryPct,
+    this.hrvMs,
+    this.restingHr,
+    this.strain,
+    this.avgHr,
+    this.sleepHours,
+    this.sleepPerformancePct,
+    this.respiratoryRate,
+    this.daysOfData = 0,
+  });
+
+  final DateTime day;
+  final int? recoveryPct;
+  final double? hrvMs;
+  final double? restingHr;
+  final double? strain; // 0–21
+  final double? avgHr;
+  final double? sleepHours;
+  final double? sleepPerformancePct;
+  final double? respiratoryRate;
+
+  /// How many scored recovery days were in range — context for "is this a
+  /// one-off or a trend".
+  final int daysOfData;
+
+  bool get isEmpty =>
+      recoveryPct == null &&
+      hrvMs == null &&
+      restingHr == null &&
+      strain == null &&
+      sleepHours == null;
+
+  RecoveryBand? get band =>
+      recoveryPct == null ? null : RecoveryBand.of(recoveryPct!);
+}
+
 const _msPerHour = 3600000.0;
 
 double? _num(Map<String, dynamic>? m, String k) =>
@@ -143,4 +203,115 @@ List<DailyBiometrics> mapWhoopDaily({
       ),
   ]..sort((a, b) => a.day.compareTo(b.day));
   return out;
+}
+
+/// Picks the newest SCORED record from a list, by the first present timestamp
+/// key. Returns null if none qualify.
+Map<String, dynamic>? _latestScored(
+  List<Map<String, dynamic>> records,
+  List<String> tsKeys, {
+  bool skipNaps = false,
+}) {
+  Map<String, dynamic>? best;
+  DateTime? bestTs;
+  for (final r in records) {
+    if (r['score_state'] != 'SCORED') continue;
+    if (skipNaps && r['nap'] == true) continue;
+    if (r['score'] is! Map) continue;
+    final ts = _tsOf(r, tsKeys);
+    if (ts == null) continue;
+    if (bestTs == null || ts.isAfter(bestTs)) {
+      best = r;
+      bestTs = ts;
+    }
+  }
+  return best;
+}
+
+/// Combine the latest recovery + sleep + cycle into one rich snapshot.
+WhoopSnapshot? latestWhoopSnapshot({
+  required List<Map<String, dynamic>> recovery,
+  required List<Map<String, dynamic>> sleep,
+  List<Map<String, dynamic>> cycle = const [],
+}) {
+  final rec = _latestScored(recovery, const ['created_at', 'updated_at']);
+  final slp =
+      _latestScored(sleep, const ['end', 'start'], skipNaps: true);
+  final cyc = _latestScored(cycle, const ['start', 'created_at']);
+  if (rec == null && slp == null && cyc == null) return null;
+
+  final recScore = rec?['score'] as Map<String, dynamic>?;
+  final slpScore = slp?['score'] as Map<String, dynamic>?;
+  final cycScore = cyc?['score'] as Map<String, dynamic>?;
+
+  final day = _tsOf(rec ?? slp ?? cyc!,
+          const ['created_at', 'end', 'start', 'updated_at']) ??
+      DateTime.now();
+
+  double? hrv = _num(recScore, 'hrv_rmssd_milli');
+  if (hrv != null && hrv < 1) hrv *= 1000; // seconds → ms
+
+  double? sleepHours;
+  final stages = slpScore?['stage_summary'];
+  if (stages is Map<String, dynamic>) {
+    final inBed = _num(stages, 'total_in_bed_time_milli') ?? 0;
+    final awake = _num(stages, 'total_awake_time_milli') ?? 0;
+    final asleep = (inBed - awake).clamp(0, double.infinity);
+    if (asleep > 0) sleepHours = asleep / _msPerHour;
+  }
+
+  final scoredDays = recovery
+      .where((r) => r['score_state'] == 'SCORED' && r['score'] is Map)
+      .length;
+
+  return WhoopSnapshot(
+    day: _dayOf(day),
+    recoveryPct: _num(recScore, 'recovery_score')?.round(),
+    hrvMs: hrv,
+    restingHr: _num(recScore, 'resting_heart_rate'),
+    strain: _num(cycScore, 'strain'),
+    avgHr: _num(cycScore, 'average_heart_rate'),
+    sleepHours: sleepHours,
+    sleepPerformancePct: _num(slpScore, 'sleep_performance_percentage'),
+    respiratoryRate: _num(slpScore, 'respiratory_rate'),
+    daysOfData: scoredDays,
+  );
+}
+
+/// Smart, one-line read of the day. Leads with recovery, then flags the two
+/// interactions that actually matter: high strain on low recovery (overreach)
+/// and a recovery/strain mismatch worth acting on. Plain language, never a
+/// bare number.
+String whoopInsight(WhoopSnapshot s) {
+  final rec = s.recoveryPct;
+  final strain = s.strain;
+  if (rec == null) {
+    return s.sleepHours != null
+        ? 'Sleep is in. Recovery computes shortly after — check back this morning.'
+        : 'Connected. Your first recovery score lands after your next sleep.';
+  }
+  final band = RecoveryBand.of(rec);
+  // Strain context, when we have it.
+  if (strain != null) {
+    if (band == RecoveryBand.red && strain >= 10) {
+      return 'Recovery is low ($rec%) and yesterday ran hard (strain '
+          '${strain.toStringAsFixed(1)}). Today is a recovery day — keep it easy.';
+    }
+    if (band == RecoveryBand.green && strain < 8) {
+      return "You're primed ($rec%) and yesterday was light. Good day to push "
+          'if you want to.';
+    }
+    if (band == RecoveryBand.red) {
+      return 'Recovery is low ($rec%). Protect it — gentle movement, water, '
+          'and an early night.';
+    }
+  }
+  return switch (band) {
+    RecoveryBand.green =>
+      "You're primed at $rec%. Your body can take on load today.",
+    RecoveryBand.yellow =>
+      'Moderate recovery ($rec%). Train, but leave a little in the tank.',
+    RecoveryBand.red =>
+      'Recovery is low ($rec%). A lighter day pays off tomorrow.',
+  };
 }
