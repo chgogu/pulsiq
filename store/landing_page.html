@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PulsIQ — Your whole health picture, in one place</title>
+<meta name="description" content="Snap a meal to get calories and full nutrition in seconds — then see it flow, in real time, into your heart rate, HRV, recovery, and sleep. One dashboard. No more app hopping." />
+<meta property="og:title" content="PulsIQ — Your whole health picture, in one place" />
+<meta property="og:description" content="Nutrition and biometrics, finally in one place. Available now on iPhone." />
+<style>
+  :root {
+    --paper: #faf6ef;
+    --card: #ffffff;
+    --ink: #262b36;
+    --ink-soft: #6b7280;
+    --coral: #ef7b61;
+    --coral-ink: #d9603f;
+    --sage: #9bc7a6;
+    --sage-ink: #5f8f70;
+    --tan: #e8c08a;
+    --line: rgba(38, 43, 54, 0.1);
+    --line-strong: rgba(38, 43, 54, 0.18);
+    --shadow: 0 1px 2px rgba(38, 43, 54, 0.04), 0 16px 36px -18px rgba(38, 43, 54, 0.22);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    --measure: 62ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1b1f27;
+      --card: #232833;
+      --ink: #f3efe7;
+      --ink-soft: #a7adba;
+      --coral: #f0906f;
+      --coral-ink: #f6a685;
+      --sage: #a9d4b3;
+      --sage-ink: #bfe3c8;
+      --tan: #ecc99a;
+      --line: rgba(243, 239, 231, 0.12);
+      --line-strong: rgba(243, 239, 231, 0.22);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 20px 40px -20px rgba(0, 0, 0, 0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1b1f27; --card: #232833; --ink: #f3efe7; --ink-soft: #a7adba;
+    --coral: #f0906f; --coral-ink: #f6a685; --sage: #a9d4b3; --sage-ink: #bfe3c8; --tan: #ecc99a;
+    --line: rgba(243, 239, 231, 0.12); --line-strong: rgba(243, 239, 231, 0.22);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 20px 40px -20px rgba(0, 0, 0, 0.55);
+  }
+  :root[data-theme="light"] {
+    --paper: #faf6ef; --card: #ffffff; --ink: #262b36; --ink-soft: #6b7280;
+    --coral: #ef7b61; --coral-ink: #d9603f; --sage: #9bc7a6; --sage-ink: #5f8f70; --tan: #e8c08a;
+    --line: rgba(38, 43, 54, 0.1); --line-strong: rgba(38, 43, 54, 0.18);
+    --shadow: 0 1px 2px rgba(38, 43, 54, 0.04), 0 16px 36px -18px rgba(38, 43, 54, 0.22);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+  button { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; border-radius: 4px; }
+  em { font-style: italic; color: var(--coral-ink); font-weight: 700; }
+
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 28px; }
+  .eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--coral-ink); }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+  /* ---------- nav ---------- */
+  nav { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .navrow { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; max-width: 1160px; margin: 0 auto; }
+  .logo { display: flex; align-items: center; gap: 9px; font-size: 1.2rem; font-weight: 700; }
+  .logo svg { width: 24px; height: 24px; flex: none; }
+  .navlinks { display: flex; align-items: center; gap: 30px; font-size: 0.92rem; }
+  .navlinks-links { display: flex; gap: 30px; }
+  .navlinks a { text-decoration: none; color: var(--ink-soft); transition: color 0.15s ease; }
+  .navlinks a:hover { color: var(--ink); }
+  @media (max-width: 720px) { .navlinks-links { display: none; } }
+
+  .btn { display: inline-flex; align-items: center; gap: 9px; border-radius: 999px; padding: 11px 20px; font-size: 0.92rem; font-weight: 700; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .btn:active { transform: translateY(1px); }
+  .btn-solid { background: var(--ink); color: var(--paper); }
+  .btn-solid:hover { box-shadow: var(--shadow); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 88px 0 96px; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; padding: 56px 0 64px; } }
+  .hero h1 { font-size: clamp(2.5rem, 5.4vw, 3.5rem); line-height: 1.08; }
+  .hero .sub { max-width: 46ch; color: var(--ink-soft); font-size: 1.09rem; margin-top: 20px; }
+  .eyebrow-pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border: 1px solid var(--line-strong); border-radius: 999px; margin-bottom: 22px; background: var(--card); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--coral); flex: none; }
+  .dot.beat { animation: beat 2.1s ease-in-out infinite; }
+  @keyframes beat { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0.55; } }
+
+  .cta-row { display: flex; align-items: center; gap: 22px; margin-top: 30px; flex-wrap: wrap; }
+  .trust-row { display: flex; gap: 22px; margin-top: 26px; flex-wrap: wrap; }
+  .trust-row span { font-size: 0.84rem; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 7px; }
+  .trust-row svg { width: 15px; height: 15px; opacity: 0.7; }
+
+  /* ---------- phone mockup ---------- */
+  .phone { background: var(--card); border: 1px solid var(--line); border-radius: 34px; box-shadow: var(--shadow); padding: 14px; max-width: 340px; margin-left: auto; }
+  @media (max-width: 900px) { .phone { margin: 0 auto; } }
+  .phone-notch { width: 40%; height: 5px; border-radius: 3px; background: var(--line-strong); margin: 0 auto 14px; }
+  .phone-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 6px 14px; font-size: 0.72rem; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 600; }
+  .phone-head .time { font-variant-numeric: tabular-nums; }
+
+  .circles { position: relative; height: 150px; border-radius: 20px; background: var(--paper); border: 1px solid var(--line); overflow: hidden; margin: 0 6px 14px; }
+  .circle { position: absolute; border-radius: 50%; opacity: 0.85; }
+  .circle.tan { width: 130px; height: 130px; background: var(--tan); left: -20px; top: 10px; }
+  .circle.sage { width: 92px; height: 92px; background: var(--sage); left: 92px; top: 34px; }
+  .circle.coral { width: 66px; height: 66px; background: var(--coral); left: 168px; top: 14px; }
+  .analyzed-pill { position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px 5px 8px; font-size: 0.7rem; font-weight: 600; box-shadow: var(--shadow); }
+  .analyzed-pill svg { width: 13px; height: 13px; }
+
+  .macro-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin: 0 6px 14px; }
+  .macro-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .macro-head .label { font-size: 0.72rem; letter-spacing: 0.06em; font-weight: 700; color: var(--ink-soft); }
+  .macro-head .kcal { font-size: 1.5rem; font-weight: 700; }
+  .macro-head .kcal span { font-size: 0.78rem; font-weight: 500; color: var(--ink-soft); }
+  .macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .macro-item .m-label { font-size: 0.66rem; letter-spacing: 0.05em; color: var(--ink-soft); font-weight: 600; margin-bottom: 3px; }
+  .macro-item .m-val { font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; }
+  .m-bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .m-bar i { display: block; height: 100%; border-radius: 2px; }
+  .m-bar.protein i { width: 68%; background: var(--coral); }
+  .m-bar.carbs i { width: 82%; background: var(--sage); }
+  .m-bar.fat i { width: 40%; background: var(--ink); }
+
+  .sync-pill { display: flex; align-items: center; justify-content: space-between; margin: 0 6px; background: color-mix(in srgb, var(--coral) 12%, var(--card)); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 0.78rem; font-weight: 600; }
+  .sync-pill .dotline { display: flex; align-items: center; gap: 7px; }
+  .sync-bar { height: 3px; border-radius: 2px; background: var(--line); margin: 8px 6px 4px; overflow: hidden; }
+  .sync-bar i { display: block; height: 100%; width: 55%; background: var(--coral); border-radius: 2px; animation: sync 2.4s ease-in-out infinite; }
+  @keyframes sync { 0%, 100% { width: 40%; } 50% { width: 75%; } }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .dot.beat, .sync-bar i { animation: none !important; }
+  }
+
+  section { position: relative; padding: 84px 0; }
+  .section-label { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .section-label .rule { height: 1px; flex: 1; background: var(--line); }
+  .kicker { font-size: 0.98rem; color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- problem ---------- */
+  .problem { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .problem blockquote { font-size: clamp(1.5rem, 3vw, 2.15rem); line-height: 1.32; max-width: 24ch; margin: 0 0 22px; font-weight: 700; }
+  .problem blockquote span { color: var(--ink-soft); font-weight: 700; }
+  .problem .resolve { max-width: var(--measure); color: var(--ink-soft); font-size: 1.02rem; }
+
+  /* ---------- one dashboard flow ---------- */
+  .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 56px; position: relative; }
+  @media (max-width: 860px) { .flow { grid-template-columns: 1fr; gap: 40px; } }
+  .flow-step { padding: 0 22px; position: relative; }
+  .flow-step:first-child { padding-left: 0; }
+  .flow-step:last-child { padding-right: 0; }
+  .flow-connector { position: absolute; top: 26px; right: -14px; width: 28px; height: 1px; background: var(--line-strong); }
+  .flow-connector::after { content: ""; position: absolute; right: -2px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--coral); }
+  @media (max-width: 860px) { .flow-connector { display: none; } }
+  .flow-icon { width: 52px; height: 52px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+  .flow-icon svg { width: 24px; height: 24px; color: var(--coral-ink); }
+  .flow-step h3 { font-size: 1.18rem; margin-bottom: 8px; }
+  .flow-step p { color: var(--ink-soft); font-size: 0.94rem; max-width: 34ch; }
+  .flow-sample { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .flow-sample .big { font-size: 1.7rem; font-weight: 700; }
+  .flow-sample .sub-num { font-size: 0.78rem; color: var(--ink-soft); font-weight: 500; }
+  .ring-wrap { display: flex; align-items: center; gap: 14px; }
+  .ring-num { font-size: 1.9rem; font-weight: 700; color: var(--sage-ink); }
+
+  /* ---------- features ---------- */
+  .feature-list { margin-top: 54px; display: flex; flex-direction: column; }
+  .feature-row { display: grid; grid-template-columns: 40px 1fr 1.3fr; gap: 30px; padding: 34px 0; border-top: 1px solid var(--line); align-items: start; }
+  .feature-row:last-child { border-bottom: 1px solid var(--line); }
+  .feature-row .idx-icon svg { width: 26px; height: 26px; color: var(--coral-ink); }
+  .feature-row h3 { font-size: 1.28rem; }
+  .feature-row p { color: var(--ink-soft); font-size: 0.98rem; max-width: 52ch; }
+  @media (max-width: 720px) {
+    .feature-row { grid-template-columns: 32px 1fr; }
+    .feature-row h3 { grid-column: 2; }
+    .feature-row p { grid-column: 2; margin-top: 6px; }
+  }
+
+  /* ---------- privacy ---------- */
+  .privacy { background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .privacy h2 { font-size: clamp(1.8rem, 3.4vw, 2.5rem); max-width: 16ch; }
+  .privacy .lede { max-width: var(--measure); color: var(--ink-soft); font-size: 1.03rem; margin-top: 18px; }
+  .badge-row { display: flex; gap: 40px; margin-top: 40px; flex-wrap: wrap; }
+  .badge { max-width: 220px; }
+  .badge svg { width: 22px; height: 22px; color: var(--sage-ink); margin-bottom: 10px; }
+  .badge b { display: block; font-size: 0.98rem; margin-bottom: 4px; }
+  .badge span { font-size: 0.86rem; color: var(--ink-soft); }
+
+  /* ---------- final cta ---------- */
+  .final { text-align: center; }
+  .final h2 { font-size: clamp(1.9rem, 4vw, 2.6rem); max-width: 18ch; margin: 0 auto 26px; }
+  .final .btn { padding: 14px 26px; font-size: 1rem; }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 1px solid var(--line); padding: 46px 0 60px; }
+  .foot-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
+  .foot-links { display: flex; gap: 24px; font-size: 0.88rem; }
+  .foot-links a { text-decoration: none; color: var(--ink-soft); }
+  .foot-links a:hover { color: var(--ink); }
+  .fineprint { color: var(--ink-soft); font-size: 0.82rem; margin-top: 24px; max-width: 60ch; }
+  .copyright { color: var(--ink-soft); font-size: 0.82rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="navrow">
+    <div class="logo">
+      <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="13" cy="13" r="12" stroke="var(--coral)" stroke-width="1.6"></circle>
+        <path d="M4 13H9L11 8L14.5 18L16.5 13H22" stroke="var(--coral)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>PulsIQ</span>
+    </div>
+    <div class="navlinks">
+      <div class="navlinks-links">
+        <a href="#dashboard">One dashboard</a>
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+      </div>
+      <a class="btn btn-solid" href="#download">Get PulsIQ</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow-pill">
+        <span class="dot beat"></span>
+        <span class="eyebrow" style="margin:0;">Available now on iPhone</span>
+      </div>
+      <h1>Your whole health picture, <em>in one place.</em></h1>
+      <p class="sub">Snap a meal to get calories and full nutrition in seconds — then see it flow, in real time, into your heart rate, HRV, recovery, and sleep. One dashboard. No more app hopping.</p>
+      <div class="cta-row">
+        <a class="btn btn-solid" href="#download" id="download">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.462 2.24-1.213 3.05-.822.89-2.15 1.58-3.24 1.49-.13-1.1.44-2.26 1.19-3.03.83-.87 2.24-1.55 3.26-1.51ZM20.5 17.29c-.55 1.27-.81 1.84-1.52 2.96-.99 1.56-2.38 3.51-4.11 3.53-1.53.02-1.93-1-4-1-2.08 0-2.51.98-4.03 1-1.66.02-2.93-1.75-3.92-3.31-2.68-4.19-2.97-9.1-1.31-11.72 1.18-1.86 3.04-2.95 4.79-2.95 1.78 0 2.9 1.02 4.37 1.02 1.43 0 2.3-1.02 4.37-1.02 1.56 0 3.21.85 4.39 2.32-3.86 2.12-3.24 7.63.87 9.17Z"></path></svg>
+          Download on the App Store
+        </a>
+        <a href="#dashboard" style="text-decoration:none; font-size:0.94rem; color:var(--ink-soft); display:inline-flex; align-items:center; gap:6px; font-weight:600;">
+          See how it works
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+      <div class="trust-row">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Encrypted on-device</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M8 15s1.5-2 4-2 4 2 4 2"></path><path d="M9 9h.01M15 9h.01"></path></svg>No ads, ever</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 3 6v6c0 5 4 8 9 10 5-2 9-5 9-10V6l-9-4Z"></path></svg>Built for iPhone</span>
+      </div>
+    </div>
+
+    <div class="phone reveal" data-reveal>
+      <div class="phone-notch"></div>
+      <div class="phone-head"><span>PULSIQ · TODAY</span><span class="time num">07:12</span></div>
+
+      <div class="circles">
+        <div class="circle tan"></div>
+        <div class="circle sage"></div>
+        <div class="circle coral"></div>
+        <div class="analyzed-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+          Analyzed on-device
+        </div>
+      </div>
+
+      <div class="macro-card">
+        <div class="macro-head">
+          <span class="label">LUNCH</span>
+          <span class="kcal num">482 <span>kcal</span></span>
+        </div>
+        <div class="macro-grid">
+          <div class="macro-item">
+            <div class="m-label">PROTEIN</div>
+            <div class="m-val num">32g</div>
+            <div class="m-bar protein"><i></i></div>
+          </div>
+          <div class="macro-item">
+            <div class="m-label">CARBS</div>
+            <div class="m-val num">54g</div>
+            <div class="m-bar carbs"><i></i></div>
+          </div>
+          <div class="macro-item">
+            <div class="m-label">FAT</div>
+            <div class="m-val num">18g</div>
+            <div class="m-bar fat"><i></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sync-pill">
+        <span class="dotline"><span class="dot beat"></span>Syncing with your biometrics…</span>
+      </div>
+      <div class="sync-bar"><i></i></div>
+    </div>
+  </section>
+
+  <section class="problem reveal" data-reveal>
+    <blockquote>Your nutrition app doesn't know your heart rate. <span>Your recovery app doesn't know what you ate.</span></blockquote>
+    <p class="resolve">Most people piece their health picture together across three or four apps that never talk to each other. PulsIQ reads your body and your plate together, in the same place, in real time.</p>
+  </section>
+
+  <section id="dashboard">
+    <div class="section-label">
+      <span class="kicker">One dashboard</span>
+      <span class="rule"></span>
+    </div>
+    <h2 class="reveal" data-reveal style="font-size:clamp(1.9rem,3.6vw,2.6rem); max-width:20ch;">From a photo of your lunch to a read on your whole day.</h2>
+
+    <div class="flow">
+      <div class="flow-step reveal" data-reveal>
+        <div class="flow-connector"></div>
+        <div class="flow-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13" r="3.2"></circle></svg>
+        </div>
+        <h3>Snap it</h3>
+        <p>Photograph or describe a meal. Most estimates run right on your phone.</p>
+        <div class="flow-sample">
+          <div class="big num">482 <span class="sub-num">kcal</span></div>
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <span style="font-size:0.76rem; padding:4px 10px; border-radius:999px; background:var(--paper); border:1px solid var(--line);"><b class="num">32</b>g protein</span>
+            <span style="font-size:0.76rem; padding:4px 10px; border-radius:999px; background:var(--paper); border:1px solid var(--line);"><b class="num">54</b>g carbs</span>
+            <span style="font-size:0.76rem; padding:4px 10px; border-radius:999px; background:var(--paper); border:1px solid var(--line);"><b class="num">18</b>g fat</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-step reveal" data-reveal>
+        <div class="flow-connector"></div>
+        <div class="flow-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l2-7 4 14 2-7h6"></path></svg>
+        </div>
+        <h3>It joins your biometrics</h3>
+        <p>Nutrition lands next to your live heart rate, HRV, recovery, and sleep.</p>
+        <div class="flow-sample ring-wrap">
+          <div class="ring-num num">91%</div>
+          <div style="font-size:0.82rem; color:var(--ink-soft);">Recovery<br />HRV <span class="num">64ms</span> · RHR <span class="num">51</span></div>
+        </div>
+      </div>
+
+      <div class="flow-step reveal" data-reveal>
+        <div class="flow-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v9l6 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
+        </div>
+        <h3>You get one read</h3>
+        <p>A single, plain-language take on your day — not five numbers to interpret yourself.</p>
+        <div class="flow-sample">
+          <p style="font-size:0.92rem; color:var(--ink); font-weight:500;">"High recovery, clean fuel early — good day to push your training."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="section-label">
+      <span class="kicker">Features</span>
+      <span class="rule"></span>
+    </div>
+    <h2 class="reveal" data-reveal style="font-size:clamp(1.9rem,3.6vw,2.6rem); max-width:22ch;">Four ways in. One picture out.</h2>
+
+    <div class="feature-list">
+      <div class="feature-row reveal" data-reveal>
+        <div class="idx-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13" r="3.2"></circle></svg></div>
+        <h3>Snap a meal</h3>
+        <p>Photograph or describe what you ate. Calories and full nutrition come back in seconds, most of it estimated right on your device.</p>
+      </div>
+
+      <div class="feature-row reveal" data-reveal>
+        <div class="idx-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l2-7 4 14 2-7h6"></path></svg></div>
+        <h3>Real-time biometrics</h3>
+        <p>Heart rate, HRV, recovery, and sleep, always current — not a weekly summary you check once and forget.</p>
+      </div>
+
+      <div class="feature-row reveal" data-reveal>
+        <div class="idx-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg></div>
+        <h3>Connect once, see everything</h3>
+        <p>Works with WHOOP, Apple Health, and Google Health Connect as data sources — your existing wearable, one dashboard.</p>
+      </div>
+
+      <div class="feature-row reveal" data-reveal>
+        <div class="idx-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"></path><path d="M19 11a7 7 0 0 1-14 0M12 19v3"></path></svg></div>
+        <h3>Voice logging</h3>
+        <p>Hold a button, say what you ate or how you feel. Done — no typing, no forms.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="privacy reveal" data-reveal id="privacy" style="margin: 0 -28px; padding: 84px 28px; border-radius: 0;">
+    <div style="max-width:1160px; margin:0 auto;">
+      <h2>Your health data is yours. Literally.</h2>
+      <p class="lede">Health logs are encrypted on your device before anything ever backs up. We store ciphertext we cannot read — not our staff, not our servers. No ads, no data sold, ever.</p>
+      <div class="badge-row">
+        <div class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+          <b>End-to-end encrypted</b>
+          <span>Your logs are unreadable to anyone but you, even on our servers.</span>
+        </div>
+        <div class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M8 15s1.5-2 4-2 4 2 4 2"></path><path d="M9 9h.01M15 9h.01"></path></svg>
+          <b>No ads, ever</b>
+          <span>PulsIQ makes money from the app, not from your attention or your data.</span>
+        </div>
+        <div class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+          <b>Delete everything, anytime</b>
+          <span>One tap in Settings permanently removes your data and keys.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final reveal" data-reveal>
+    <h2>Your plate and your pulse, finally talking to each other.</h2>
+    <a class="btn btn-solid" href="#download">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.462 2.24-1.213 3.05-.822.89-2.15 1.58-3.24 1.49-.13-1.1.44-2.26 1.19-3.03.83-.87 2.24-1.55 3.26-1.51ZM20.5 17.29c-.55 1.27-.81 1.84-1.52 2.96-.99 1.56-2.38 3.51-4.11 3.53-1.53.02-1.93-1-4-1-2.08 0-2.51.98-4.03 1-1.66.02-2.93-1.75-3.92-3.31-2.68-4.19-2.97-9.1-1.31-11.72 1.18-1.86 3.04-2.95 4.79-2.95 1.78 0 2.9 1.02 4.37 1.02 1.43 0 2.3-1.02 4.37-1.02 1.56 0 3.21.85 4.39 2.32-3.86 2.12-3.24 7.63.87 9.17Z"></path></svg>
+      Download on the App Store
+    </a>
+  </section>
+
+  <footer>
+    <div class="foot-row">
+      <div class="logo">
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="13" cy="13" r="12" stroke="var(--coral)" stroke-width="1.6"></circle>
+          <path d="M4 13H9L11 8L14.5 18L16.5 13H22" stroke="var(--coral)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>PulsIQ</span>
+      </div>
+      <div class="foot-links">
+        <a href="#">Privacy Policy</a>
+        <a href="mailto:privacy@pulsiq.app">Contact</a>
+      </div>
+    </div>
+    <p class="fineprint">PulsIQ is a wellness companion, not a medical device. Nothing in the app is medical advice, diagnosis, or treatment.</p>
+    <p class="copyright">© 2026 VeeC Labs</p>
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var els = document.querySelectorAll("[data-reveal]");
+    if (reduced || !("IntersectionObserver" in window)) {
+      els.forEach(function (el) { el.classList.add("in"); });
+      return;
+    }
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in");
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
+    );
+    els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
+
+</body>
+</html>
