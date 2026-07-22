@@ -278,6 +278,17 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                 style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(46)),
               ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).maybePop();
+                  context.push('/scan-barcode');
+                },
+                icon: const Icon(Icons.barcode_reader),
+                label: const Text('Scan a barcode — packaged food'),
+                style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46)),
+              ),
               const SizedBox(height: 12),
             ],
             if (!editing)

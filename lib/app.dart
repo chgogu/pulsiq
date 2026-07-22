@@ -6,6 +6,7 @@ import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/sign_in_screen.dart';
 import 'features/lock/lock_gate.dart';
 import 'features/nutrition/nutrition_screen.dart';
+import 'features/nutrition/scan_barcode_screen.dart';
 import 'features/nutrition/snap_meal_screen.dart';
 import 'features/order_hack/order_hack_screen.dart';
 import 'features/profile/body_profile_screen.dart';
@@ -38,6 +39,10 @@ GoRouter buildRouter() => GoRouter(
             GoRoute(
               path: '/snap-meal',
               builder: (_, _) => const SnapMealScreen(),
+            ),
+            GoRoute(
+              path: '/scan-barcode',
+              builder: (_, _) => const ScanBarcodeScreen(),
             ),
             GoRoute(
               path: '/settings',
