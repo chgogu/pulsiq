@@ -1,72 +1,53 @@
-# PulsIQ — Landing Page Prompt for Lovable
+# PulsIQ — Landing Page Prompt for Lovable (v2 — active/live page)
 
-**Biometric intelligence in real time.**
+Completely rebuild this as an **active, live product landing page** — not a pre-launch/waitlist page. PulsIQ is available now. Remove all "early access," "waitlist," and "coming soon" framing entirely. Every primary CTA should be "Get PulsIQ" / "Download for iOS" style language, not "get early access."
 
-Build a marketing landing page for **PulsIQ**, a biometric-first, voice-first AI energy coach app for iOS and Android. This is a pre-launch landing page: the goal is to establish the domain (**pulsiq.app**), collect early-access signups, and host our privacy policy. There is no live app link yet — every CTA goes to an email-capture form.
+**Platform focus for this version: iOS only.** Do not add or mention Android or Google Play anywhere on the page yet — no Android badges, no "coming to Android" teasers, nothing. iOS-only messaging and an App Store-style CTA (the actual App Store link/badge can be a placeholder for now since the app isn't listed yet, but the page should read and function as if iOS is the one and only platform).
 
-## Brand
+## The core pitch — get this exactly right
 
-- **Name:** PulsIQ (always this capitalization — never "Pulsiq" or "PULSIQ")
-- **Tagline:** "Biometric intelligence in real time"
-- **One-line positioning:** Your pulse, interpreted intelligently — nutrition and hydration are inputs that explain what your biometrics show, not the main event.
-- **Tone:** calm, confident, clinical-but-warm. No hype, no exclamation points, no "revolutionary AI" language. Think Oura/Whoop-adjacent — quiet competence, not a supplement-ad.
-- **Positioning against the category:** most health apps make you log everything and guess what it means. PulsIQ reads your body first (HRV, resting heart rate, recovery, sleep) and explains your day through that lens — food and hydration are context, not the whole story.
+PulsIQ is the **one place to track your entire health picture** — not another app you add to a pile of apps. The core idea:
 
-## Visual identity — use these exact values
+1. **Snap a photo of your meal** → PulsIQ tells you the calories and nutrition instantly.
+2. That nutrition and hydration data is then **combined in real time with your heart rate, HRV, recovery, and sleep** — pulled in from whatever you already use: WHOOP, Apple Health, or Google Health Connect.
+3. The result: **one single dashboard** that connects what you eat and drink to what your body is actually doing — instead of a separate nutrition app, a separate WHOOP app, a separate Apple Health app that never talk to each other.
 
-- **Primary accent ("pulse"):** `#FF3B5C`
-- **Deep accent (pressed/hover states):** `#D91E44`
-- **Dark surface:** `#0B1220` (near-black navy, not pure black)
-- **Dark card surface:** `#151F31`
-- **Light surface:** `#F6F8FB` (soft mist white, not pure white)
-- Default to **dark mode as the primary/hero look** (navy `#0B1220` background, white text, the pulse red `#FF3B5C` as the one accent color — buttons, the logo mark, key numbers). Support a light mode toggle using the mist/white surfaces above, same accent.
-- Rounded corners throughout (large radius, ~20px on cards) — soft, not sharp. No hard shadows; flat elevation, like Material 3 with elevation removed.
-- Typography: a clean geometric sans (Inter, Manrope, or similar). Large, confident numbers for stats (e.g., a hero stat like "62 bpm" or "41ms HRV") in bold weight.
-- Motif: a subtle heartbeat/pulse waveform line (like an ECG trace) as a recurring graphic element — in the hero background, section dividers, or behind the logo. Should feel organic, not a literal medical monitor.
+This "one stop, not app-hopping" idea is the single most important message on the page — it should come through clearly in the hero and get its own dedicated section, not just a line item in a features list. The contrast to draw: today people bounce between 3-4 different apps to piece together their health picture; PulsIQ is the one place all of it lives together, connected.
 
-## Page structure
+## Brand — open to reinvention, but keep it premium
 
-1. **Hero**
-   - Headline: "PulsIQ" (wordmark) + tagline "Biometric intelligence in real time"
-   - Subhead: one or two sentences — your heart rate and recovery, read intelligently every day; nutrition and hydration explain what the numbers show.
-   - Primary CTA: email input + "Get early access" button (no app store links — not live yet)
-   - Secondary link: "How it works" (scrolls down)
-   - Background: dark navy with a faint animated or static pulse-wave line graphic
+You are free to **redesign the logo, the color palette, and the overall visual direction** — the previous dark-navy-and-red direction should be replaced. Requirements for the new direction:
 
-2. **The problem** (brief, one short section)
-   - Most health apps ask you to log everything and interpret nothing. PulsIQ flips that: your biometrics lead, everything else is context.
+- **No black or near-black backgrounds.** The page should feel light, warm, and inviting to open — not clinical or heavy. Think a calm, premium wellness brand (Oura's website, Whoop's lighter marketing pages, Headspace's calm-but-premium feel) rather than a dark "biohacker dashboard" look.
+- **Soft, subtle, good-to-look-at colors** — gentle gradients or a warm neutral base (soft creams, warm off-whites, soft sage/blue/coral accent tones) rather than saturated red-on-black. The palette should feel calming and make someone want to linger, not feel like a warning system.
+- Still premium and "billion-user" in production quality — generous whitespace, confident large typography, smooth scroll-triggered motion, a polished animated product visualization in the hero (since there's no real app video yet, build a beautiful animated mockup: a phone frame showing a meal photo turning into a nutrition card, then flowing into a heart-rate/recovery ring animation, visually showing the "meal → biometrics, connected" story).
+- Keep the name **PulsIQ** and the tagline concept of biometric intelligence, but the logo mark and full color system should be freshly designed to fit the new, softer direction. Propose a clean wordmark plus a simple icon (a pulse/heartbeat line integrated into an "S" or a simple radial/ring mark both work well) in the new palette.
+- Rounded, soft UI throughout — large corner radii, no hard shadows, gentle elevation.
 
-3. **How it works / core features** (3–4 cards, icon + short headline + 1-2 lines each)
-   - **Biometric-first score** — a daily score built from your resting heart rate and HRV against your own baseline, not a generic target.
-   - **Snap a meal** — photograph or describe what you ate; nutrition is estimated automatically, most of it entirely on your device at no cost to your privacy.
-   - **Voice logging** — hold a button, say what you ate or how you feel, done.
-   - **Connect your wearable** — works with WHOOP, Apple Health, and Google Health Connect; your pulse data flows in from what you already wear.
+## Page structure (active-product framing)
 
-4. **Privacy section** (important — make this prominent, not buried)
-   - Headline like "Your health data is yours. Literally."
-   - Explain plainly: health data is encrypted on your device before it's ever backed up; even we can't read it. No ads, no selling data.
-   - Small trust badges/icons: "End-to-end encrypted", "No ads", "You can delete everything, anytime"
+1. **Hero** — PulsIQ wordmark, a confident headline built around the "one place for your whole health picture" idea (not a generic tagline), a short subhead explaining snap-a-meal + real-time biometrics in one sentence, a primary CTA "Download for iOS" (App Store badge/link placeholder), and the animated meal→biometrics phone mockup as the visual centerpiece. Soft warm background, no black.
+2. **The problem** — brief, confident: today your nutrition app, your WHOOP app, and your Apple Health app don't talk to each other, so you never see the full picture. Reframe as "stop switching apps."
+3. **The one-stop dashboard** (its own dedicated, prominent section — this is the heart of the pitch) — show how a meal photo becomes calories/macros, and how that connects immediately to your heart rate, HRV, recovery, and sleep pulled from your connected wearable, all in one view. This should feel like the visual and narrative climax of the page.
+4. **Core features** (cards, each visually distinct):
+   - Snap a meal — photograph or describe food, calories and full nutrition estimated instantly, most of it processed on-device
+   - Real-time biometrics — heart rate, HRV, recovery, and sleep, always current
+   - Connect once, see everything — works with WHOOP, Apple Health, and Google Health Connect (mention these as data sources the app reads from — this is not an Android feature callout, just naming the integrations available to an iOS user, e.g. Apple Health is native and Google Health Connect data can still be viewed by an iOS-using household/traveler if relevant — keep this light and factual, not a platform promise)
+   - Voice logging — hold a button, say what you ate or how you feel, done
+5. **Privacy section** — prominent. Health data is encrypted on your device before it's ever backed up; even we can't read it. No ads, no selling data. Trust badges: "End-to-end encrypted", "No ads, ever", "Delete everything, anytime".
+6. **Final CTA section** — a strong, simple "Download PulsIQ for iOS" repeat of the App Store CTA. No email capture, no waitlist form anywhere on the page.
+7. **Footer** — PulsIQ wordmark, Privacy Policy link (stub page), Contact (mailto: privacy@pulsiq.app), small print "PulsIQ is a wellness companion, not a medical device.", copyright "© 2026 VeeC Labs".
 
-5. **Early access / waitlist section**
-   - Repeat the email capture with a slightly longer pitch: "Be first to try PulsIQ" + email input + button
-   - Optional: a field for "iOS or Android?" as a dropdown (nice-to-have, not required)
+## Explicitly remove from the previous version
 
-6. **Footer**
-   - PulsIQ wordmark
-   - Links: Privacy Policy (placeholder link, page can be a simple stub for now), Contact (mailto: privacy@pulsiq.app)
-   - Small print: "PulsIQ is a wellness companion, not a medical device."
-   - Copyright: "© [current year] VeeC Labs"
+- All "early access," "waitlist," "be first to try," and email-capture forms/sections — delete entirely.
+- Any Supabase waitlist table wiring tied to email capture — remove that logic since there's no signup form anymore.
+- The black/near-black dark-mode-only hero background and the red/navy palette.
+- Any Android or Google Play mention.
 
 ## Functional requirements
 
-- Fully responsive (mobile-first — most visitors will be on phones)
-- Email capture form should actually store submissions (use whatever backend/waitlist mechanism Lovable supports — Supabase table, or a simple form service) so signups aren't lost
-- Fast, minimal — no heavy animation libraries; a single subtle hero animation (pulse line, or a gently animating heartbeat graphic) is enough
-- Include basic SEO meta tags: title "PulsIQ — Biometric intelligence in real time", meta description using the one-line positioning above, and an Open Graph image (can be a simple dark-navy card with the wordmark + tagline)
-- Do not include: pricing, app store badges/links, testimonials, or any specific numeric health claims (no "improve HRV by X%" — we make no clinical claims)
-
-## What NOT to do
-
-- Don't invent features not listed above (no social feed, no leaderboard, no marketplace)
-- Don't use stock photography of people exercising — prefer abstract/data-visualization style graphics consistent with the pulse-wave motif
-- Don't make it feel like a supplement or crypto landing page (no countdown timers, no fake scarcity, no "limited spots")
+- Fully responsive, mobile-first.
+- Fast load; the hero animation should feel premium but not bloat load time — lazy-load below-the-fold motion.
+- SEO meta tags: title "PulsIQ — Your whole health picture, in one place", meta description built around the snap-a-meal + real-time biometrics + one-dashboard pitch, Open Graph image using the new palette.
+- Do not include: pricing, Android/Play Store references, testimonials, countdown timers, fake scarcity, or specific numeric health claims (no "improve HRV by X%").
