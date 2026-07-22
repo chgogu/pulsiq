@@ -141,42 +141,52 @@ void main() {
         },
       };
 
-  group('latest snapshot', () {
-    test('combines the newest recovery, sleep, and cycle', () {
-      final snap = latestWhoopSnapshot(
+  group('body history + averages', () {
+    test('merges per day and the latest carries the newest reading', () {
+      final body = WhoopBody(mapWhoopDays(
         recovery: [
           recovery('2026-07-19T07:00:00.000Z', hrv: 40, rhr: 60),
           recovery('2026-07-21T07:00:00.000Z', hrv: 68, rhr: 52),
         ],
         sleep: [sleep('2026-07-21T06:30:00.000Z')],
-        cycle: [cycle('2026-07-20T05:00:00.000Z', strain: 14.2, avgHr: 88)],
-      )!;
-      // Newest recovery (the 21st) wins.
-      expect(snap.recoveryPct, 66);
-      expect(snap.hrvMs, 68);
-      expect(snap.restingHr, 52);
-      expect(snap.strain, 14.2);
-      expect(snap.avgHr, 88);
-      expect(snap.sleepHours, closeTo(7.5, 0.001));
-      expect(snap.daysOfData, 2);
-      expect(snap.band, RecoveryBand.yellow);
+        cycle: [cycle('2026-07-21T05:00:00.000Z', strain: 14.2, avgHr: 88)],
+      ));
+      expect(body.days, hasLength(2));
+      final latest = body.latest!;
+      expect(latest.hrvMs, 68);
+      expect(latest.restingHr, 52);
+      expect(latest.strain, 14.2);
+      expect(latest.sleepHours, closeTo(7.5, 0.001));
+      expect(latest.band, RecoveryBand.yellow);
     });
 
-    test('returns null when nothing is scored', () {
-      expect(
-        latestWhoopSnapshot(recovery: const [], sleep: const []),
-        isNull,
-      );
+    test('computes 60-day averages, skipping null days', () {
+      final body = WhoopBody(mapWhoopDays(
+        recovery: [
+          recovery('2026-07-19T07:00:00.000Z', hrv: 40, rhr: 60),
+          recovery('2026-07-21T07:00:00.000Z', hrv: 60, rhr: 50),
+        ],
+        sleep: const [],
+      ));
+      expect(body.average((d) => d.hrvMs), 50); // (40+60)/2
+      expect(body.average((d) => d.restingHr), 55);
+      expect(body.average((d) => d.sleepHours), isNull); // no sleep days
+      expect(body.scoredRecoveryDays, 2);
+    });
+
+    test('is empty when nothing scored', () {
+      expect(WhoopBody(mapWhoopDays(recovery: const [], sleep: const [])).isEmpty,
+          isTrue);
     });
 
     test('surfaces sleep even before recovery has computed', () {
-      final snap = latestWhoopSnapshot(
+      final body = WhoopBody(mapWhoopDays(
         recovery: const [],
         sleep: [sleep('2026-07-21T06:30:00.000Z', efficiency: 90)],
-      )!;
-      expect(snap.recoveryPct, isNull);
-      expect(snap.sleepHours, closeTo(7.5, 0.001));
-      expect(snap.isEmpty, isFalse);
+      ));
+      expect(body.latest!.recoveryPct, isNull);
+      expect(body.latest!.sleepHours, closeTo(7.5, 0.001));
+      expect(body.isEmpty, isFalse);
     });
   });
 
@@ -190,8 +200,7 @@ void main() {
   });
 
   group('smart insight', () {
-    WhoopSnapshot snap({int? rec, double? strain, double? sleep}) =>
-        WhoopSnapshot(
+    WhoopDay snap({int? rec, double? strain, double? sleep}) => WhoopDay(
           day: DateTime(2026, 7, 21),
           recoveryPct: rec,
           strain: strain,

@@ -12,7 +12,6 @@ import '../health_source.dart';
 /// Deployment config (spec §0): the proxy holds the WHOOP client secret and
 /// does the token exchange. Empty until built with --dart-define.
 const _defaultProxyUrl = String.fromEnvironment('PULSIQ_PROXY_URL');
-const _whoopApiBase = 'https://api.prod.whoop.com/developer';
 const _callbackScheme = 'pulsiq';
 
 /// Key for the refresh token in the device keychain. The refresh token is
@@ -166,24 +165,33 @@ class WhoopAuth {
   }
 }
 
-/// Why a snapshot fetch produced what it did — lets the card show a precise
-/// state instead of a silent blank.
+/// Why a body-signals fetch produced what it did — lets the card show a
+/// precise state instead of a silent blank.
 enum WhoopFetchStatus { ok, noAccess, empty, error }
 
 class WhoopFetchResult {
-  const WhoopFetchResult(this.status, {this.snapshot});
+  const WhoopFetchResult(this.status, {this.body});
   final WhoopFetchStatus status;
-  final WhoopSnapshot? snapshot;
+  final WhoopBody? body;
 }
 
-/// Reads WHOOP recovery + sleep as daily biometrics. Implements the same
-/// [HealthSource] seam as Apple Health, so the score consumes it unchanged.
+/// Reads WHOOP data (recovery, sleep, cycle) through the proxy, which pins the
+/// API version (v2) and logs what came back. Implements the [HealthSource]
+/// seam so the score consumes it unchanged, and also exposes the richer
+/// [fetchBody] for the dashboard's body-signals card.
 class WhoopHealthSource implements HealthSource {
-  WhoopHealthSource(this._auth, {http.Client? client})
-      : _http = client ?? http.Client();
+  WhoopHealthSource(
+    this._auth, {
+    http.Client? client,
+    String proxyUrl = _defaultProxyUrl,
+  })  : _http = client ?? http.Client(),
+        // Private named field can't be an initializing formal.
+        // ignore: prefer_initializing_formals
+        _proxyUrl = proxyUrl;
 
   final WhoopAuth _auth;
   final http.Client _http;
+  final String _proxyUrl;
 
   @override
   Future<bool> requestPermissions() => _auth.connect();
@@ -196,55 +204,58 @@ class WhoopHealthSource implements HealthSource {
     final token = await _auth.accessToken();
     if (token == null) return const [];
     try {
-      final recovery = await _collection('/v1/recovery', from, to, token);
-      final sleep = await _collection('/v1/activity/sleep', from, to, token);
+      final recovery = await _collection('recovery', from, to, token);
+      final sleep = await _collection('activity/sleep', from, to, token);
       return mapWhoopDaily(recovery: recovery, sleep: sleep);
     } catch (_) {
       return const [];
     }
   }
 
-  /// The richest recent reading for the dashboard card — latest recovery,
-  /// sleep, and cycle over the last two weeks — with a status so the UI can
-  /// distinguish "no token", "no data yet", and "fetch failed".
-  Future<WhoopFetchResult> fetchSnapshot() async {
+  /// 60 days of recovery + sleep + cycle, merged into per-day body signals with
+  /// averages. Status distinguishes "no token", "no scored data yet", and
+  /// "fetch failed" so the card never blanks silently.
+  Future<WhoopFetchResult> fetchBody() async {
     final token = await _auth.accessToken();
     if (token == null) return const WhoopFetchResult(WhoopFetchStatus.noAccess);
     try {
       final now = DateTime.now();
-      final from = now.subtract(const Duration(days: 14));
-      final recovery = await _collection('/v1/recovery', from, now, token);
-      final sleep = await _collection('/v1/activity/sleep', from, now, token);
-      final cycle = await _collection('/v1/cycle', from, now, token);
-      final snap = latestWhoopSnapshot(
-          recovery: recovery, sleep: sleep, cycle: cycle);
-      if (snap == null || snap.isEmpty) {
-        return const WhoopFetchResult(WhoopFetchStatus.empty);
-      }
-      return WhoopFetchResult(WhoopFetchStatus.ok, snapshot: snap);
+      final from = now.subtract(const Duration(days: 60));
+      final recovery = await _collection('recovery', from, now, token);
+      final sleep = await _collection('activity/sleep', from, now, token);
+      final cycle = await _collection('cycle', from, now, token);
+      final body = WhoopBody(
+          mapWhoopDays(recovery: recovery, sleep: sleep, cycle: cycle));
+      if (body.isEmpty) return const WhoopFetchResult(WhoopFetchStatus.empty);
+      return WhoopFetchResult(WhoopFetchStatus.ok, body: body);
     } catch (_) {
       return const WhoopFetchResult(WhoopFetchStatus.error);
     }
   }
 
-  /// Paginated GET of a WHOOP record collection over [from, to].
+  /// Paginated fetch of a WHOOP v2 collection via the proxy (which prefixes
+  /// /v2/ and logs counts). [resource] is 'recovery' | 'cycle' |
+  /// 'activity/sleep'.
   Future<List<Map<String, dynamic>>> _collection(
-    String path,
+    String resource,
     DateTime from,
     DateTime to,
     String token,
   ) async {
     final out = <Map<String, dynamic>>[];
     String? nextToken;
-    for (var page = 0; page < 20; page++) {
-      final uri = Uri.parse('$_whoopApiBase$path').replace(queryParameters: {
-        'start': from.toUtc().toIso8601String(),
-        'end': to.toUtc().toIso8601String(),
-        'limit': '25',
-        'nextToken': ?nextToken,
-      });
-      final res =
-          await _http.get(uri, headers: {'authorization': 'Bearer $token'});
+    for (var page = 0; page < 40; page++) {
+      final res = await _http.post(
+        Uri.parse('$_proxyUrl/v1/whoop/fetch'),
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode({
+          'access_token': token,
+          'resource': resource,
+          'start': from.toUtc().toIso8601String(),
+          'end': to.toUtc().toIso8601String(),
+          'next_token': nextToken,
+        }),
+      );
       if (res.statusCode != 200) break;
       final body = jsonDecode(res.body) as Map<String, dynamic>;
       final records = body['records'];
@@ -253,7 +264,7 @@ class WhoopHealthSource implements HealthSource {
           if (r is Map<String, dynamic>) out.add(r);
         }
       }
-      final nt = body['next_token'];
+      final nt = body['next_token'] ?? body['nextToken'];
       if (nt is String && nt.isNotEmpty) {
         nextToken = nt;
       } else {

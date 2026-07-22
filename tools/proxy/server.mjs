@@ -45,6 +45,43 @@ const WHOOP = {
     'read:profile read:body_measurement',
 };
 
+// WHOOP v2 data base (v1 was fully deprecated Oct 2025).
+const WHOOP_API = 'https://api.prod.whoop.com/developer/v2';
+const WHOOP_RESOURCES = new Set([
+  'recovery',
+  'cycle',
+  'activity/sleep',
+  'activity/workout',
+]);
+
+// Fetches a WHOOP v2 collection with the caller's access token and logs what
+// came back (counts + score-state mix, never personal values) so data issues
+// are diagnosable server-side.
+async function whoopFetch({ accessToken, resource, start, end, nextToken }) {
+  const qs = new URLSearchParams({ limit: '25' });
+  if (start) qs.set('start', start);
+  if (end) qs.set('end', end);
+  if (nextToken) qs.set('nextToken', nextToken);
+  const res = await fetch(`${WHOOP_API}/${resource}?${qs}`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = { records: [], _parse_error: text.slice(0, 120) };
+  }
+  const records = Array.isArray(json.records) ? json.records : [];
+  const states = {};
+  for (const r of records) states[r.score_state ?? '?'] = (states[r.score_state ?? '?'] ?? 0) + 1;
+  console.log(
+    `  whoop/${resource}: ${res.status}, ${records.length} records ` +
+      `${JSON.stringify(states)}`,
+  );
+  return { status: res.status, json };
+}
+
 // Exchanges an auth code (or a refresh token) for WHOOP tokens. Returns the
 // raw token JSON so the app can store the refresh token itself.
 async function whoopToken(params) {
@@ -362,6 +399,34 @@ createServer((req, res) => {
       authorize_url: WHOOP.authUrl,
       scopes: WHOOP.scopes,
     });
+  }
+
+  // Proxied WHOOP v2 data fetch (keeps the version + logging in one place).
+  if (req.method === 'POST' && req.url === '/v1/whoop/fetch') {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', async () => {
+      const started = Date.now();
+      try {
+        const p = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        if (!p.access_token || !WHOOP_RESOURCES.has(p.resource)) {
+          return send(400, { error: 'bad_request' });
+        }
+        const { status, json } = await whoopFetch({
+          accessToken: p.access_token,
+          resource: p.resource,
+          start: p.start,
+          end: p.end,
+          nextToken: p.next_token,
+        });
+        console.log(`/v1/whoop/fetch ${p.resource} in ${Date.now() - started}ms`);
+        send(status === 200 ? 200 : 502, json);
+      } catch (err) {
+        console.error('/v1/whoop/fetch FAILED:', err?.message ?? err);
+        send(502, { error: String(err?.message ?? err) });
+      }
+    });
+    return;
   }
 
   const whoopGrant =

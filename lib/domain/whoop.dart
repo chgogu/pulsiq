@@ -74,38 +74,38 @@ enum RecoveryBand {
       };
 }
 
-/// The richest recent WHOOP reading — the latest scored recovery, plus the
-/// sleep and cycle that go with it. Drives the dashboard WHOOP card. Unlike
-/// [DailyBiometrics] (which feeds the baseline score and needs a same-day
-/// point), this deliberately surfaces the *most recent available* data so the
-/// card is never blank just because today's recovery hasn't computed yet.
-class WhoopSnapshot {
-  const WhoopSnapshot({
+/// One day of body signals — the union of that day's recovery, sleep, and
+/// cycle from the wearable. Fields are null when the wearable hasn't scored
+/// them yet. (Distinct from [DailyBiometrics], which is the trimmed subset the
+/// baseline score consumes.)
+class WhoopDay {
+  const WhoopDay({
     required this.day,
     this.recoveryPct,
     this.hrvMs,
     this.restingHr,
-    this.strain,
-    this.avgHr,
+    this.respiratoryRate,
+    this.spo2Pct,
+    this.skinTempC,
     this.sleepHours,
     this.sleepPerformancePct,
-    this.respiratoryRate,
-    this.daysOfData = 0,
+    this.strain,
+    this.avgHr,
+    this.calories,
   });
 
   final DateTime day;
   final int? recoveryPct;
   final double? hrvMs;
   final double? restingHr;
-  final double? strain; // 0–21
-  final double? avgHr;
+  final double? respiratoryRate;
+  final double? spo2Pct;
+  final double? skinTempC;
   final double? sleepHours;
   final double? sleepPerformancePct;
-  final double? respiratoryRate;
-
-  /// How many scored recovery days were in range — context for "is this a
-  /// one-off or a trend".
-  final int daysOfData;
+  final double? strain; // 0–21
+  final double? avgHr;
+  final double? calories; // kcal
 
   bool get isEmpty =>
       recoveryPct == null &&
@@ -116,6 +116,45 @@ class WhoopSnapshot {
 
   RecoveryBand? get band =>
       recoveryPct == null ? null : RecoveryBand.of(recoveryPct!);
+}
+
+/// A window of [WhoopDay]s (ascending; last = most recent) with the averaging
+/// helpers the dashboard needs. Built for a 60-day window.
+class WhoopBody {
+  const WhoopBody(this.days);
+
+  final List<WhoopDay> days;
+
+  bool get isEmpty => days.isEmpty || days.every((d) => d.isEmpty);
+
+  /// Most recent day that carries any signal — the card's headline reading.
+  WhoopDay? get latest {
+    for (final d in days.reversed) {
+      if (!d.isEmpty) return d;
+    }
+    return days.isEmpty ? null : days.last;
+  }
+
+  int get scoredRecoveryDays =>
+      days.where((d) => d.recoveryPct != null).length;
+
+  /// Mean of a metric over the window, skipping days that lack it. Null when
+  /// no day has the metric.
+  double? average(num? Function(WhoopDay) pick) {
+    var sum = 0.0;
+    var n = 0;
+    for (final d in days) {
+      final v = pick(d);
+      if (v != null) {
+        sum += v;
+        n++;
+      }
+    }
+    return n == 0 ? null : sum / n;
+  }
+
+  int samples(num? Function(WhoopDay) pick) =>
+      days.where((d) => pick(d) != null).length;
 }
 
 const _msPerHour = 3600000.0;
@@ -205,93 +244,119 @@ List<DailyBiometrics> mapWhoopDaily({
   return out;
 }
 
-/// Picks the newest SCORED record from a list, by the first present timestamp
-/// key. Returns null if none qualify.
-Map<String, dynamic>? _latestScored(
-  List<Map<String, dynamic>> records,
-  List<String> tsKeys, {
-  bool skipNaps = false,
-}) {
-  Map<String, dynamic>? best;
-  DateTime? bestTs;
-  for (final r in records) {
-    if (r['score_state'] != 'SCORED') continue;
-    if (skipNaps && r['nap'] == true) continue;
-    if (r['score'] is! Map) continue;
-    final ts = _tsOf(r, tsKeys);
-    if (ts == null) continue;
-    if (bestTs == null || ts.isAfter(bestTs)) {
-      best = r;
-      bestTs = ts;
-    }
-  }
-  return best;
-}
+const _kjPerKcal = 4.184;
 
-/// Combine the latest recovery + sleep + cycle into one rich snapshot.
-WhoopSnapshot? latestWhoopSnapshot({
+/// Merge recovery + sleep + cycle records into one [WhoopDay] per calendar
+/// day, over whatever range was fetched. Ascending by day.
+List<WhoopDay> mapWhoopDays({
   required List<Map<String, dynamic>> recovery,
   required List<Map<String, dynamic>> sleep,
   List<Map<String, dynamic>> cycle = const [],
 }) {
-  final rec = _latestScored(recovery, const ['created_at', 'updated_at']);
-  final slp =
-      _latestScored(sleep, const ['end', 'start'], skipNaps: true);
-  final cyc = _latestScored(cycle, const ['start', 'created_at']);
-  if (rec == null && slp == null && cyc == null) return null;
+  final recPct = <DateTime, int>{};
+  final hrv = <DateTime, double>{};
+  final rhr = <DateTime, double>{};
+  final spo2 = <DateTime, double>{};
+  final skin = <DateTime, double>{};
+  final resp = <DateTime, double>{};
+  final sleepH = <DateTime, double>{};
+  final sleepPerf = <DateTime, double>{};
+  final strain = <DateTime, double>{};
+  final avgHr = <DateTime, double>{};
+  final cals = <DateTime, double>{};
+  final days = <DateTime>{};
 
-  final recScore = rec?['score'] as Map<String, dynamic>?;
-  final slpScore = slp?['score'] as Map<String, dynamic>?;
-  final cycScore = cyc?['score'] as Map<String, dynamic>?;
-
-  final day = _tsOf(rec ?? slp ?? cyc!,
-          const ['created_at', 'end', 'start', 'updated_at']) ??
-      DateTime.now();
-
-  double? hrv = _num(recScore, 'hrv_rmssd_milli');
-  if (hrv != null && hrv < 1) hrv *= 1000; // seconds → ms
-
-  double? sleepHours;
-  final stages = slpScore?['stage_summary'];
-  if (stages is Map<String, dynamic>) {
-    final inBed = _num(stages, 'total_in_bed_time_milli') ?? 0;
-    final awake = _num(stages, 'total_awake_time_milli') ?? 0;
-    final asleep = (inBed - awake).clamp(0, double.infinity);
-    if (asleep > 0) sleepHours = asleep / _msPerHour;
+  for (final r in recovery) {
+    if (r['score_state'] != 'SCORED') continue;
+    final score = r['score'];
+    if (score is! Map<String, dynamic>) continue;
+    final ts = _tsOf(r, const ['created_at', 'updated_at']);
+    if (ts == null) continue;
+    final day = _dayOf(ts);
+    days.add(day);
+    final rp = _num(score, 'recovery_score');
+    if (rp != null) recPct[day] = rp.round();
+    final rh = _num(score, 'resting_heart_rate');
+    if (rh != null) rhr[day] = rh;
+    var h = _num(score, 'hrv_rmssd_milli');
+    if (h != null) hrv[day] = h < 1 ? h * 1000 : h; // seconds → ms
+    final sp = _num(score, 'spo2_percentage');
+    if (sp != null) spo2[day] = sp;
+    final st = _num(score, 'skin_temp_celsius');
+    if (st != null) skin[day] = st;
   }
 
-  final scoredDays = recovery
-      .where((r) => r['score_state'] == 'SCORED' && r['score'] is Map)
-      .length;
+  for (final s in sleep) {
+    if (s['score_state'] != 'SCORED') continue;
+    if (s['nap'] == true) continue;
+    final score = s['score'];
+    if (score is! Map<String, dynamic>) continue;
+    final ts = _tsOf(s, const ['end', 'start']);
+    if (ts == null) continue;
+    final day = _dayOf(ts);
+    days.add(day);
+    final stages = score['stage_summary'];
+    if (stages is Map<String, dynamic>) {
+      final inBed = _num(stages, 'total_in_bed_time_milli') ?? 0;
+      final awake = _num(stages, 'total_awake_time_milli') ?? 0;
+      final asleep = (inBed - awake).clamp(0, double.infinity);
+      if (asleep > 0) sleepH[day] = asleep / _msPerHour;
+    }
+    final perf = _num(score, 'sleep_performance_percentage');
+    if (perf != null) sleepPerf[day] = perf;
+    final rr = _num(score, 'respiratory_rate');
+    if (rr != null) resp[day] = rr;
+  }
 
-  return WhoopSnapshot(
-    day: _dayOf(day),
-    recoveryPct: _num(recScore, 'recovery_score')?.round(),
-    hrvMs: hrv,
-    restingHr: _num(recScore, 'resting_heart_rate'),
-    strain: _num(cycScore, 'strain'),
-    avgHr: _num(cycScore, 'average_heart_rate'),
-    sleepHours: sleepHours,
-    sleepPerformancePct: _num(slpScore, 'sleep_performance_percentage'),
-    respiratoryRate: _num(slpScore, 'respiratory_rate'),
-    daysOfData: scoredDays,
-  );
+  for (final c in cycle) {
+    if (c['score_state'] != 'SCORED') continue;
+    final score = c['score'];
+    if (score is! Map<String, dynamic>) continue;
+    final ts = _tsOf(c, const ['start', 'created_at']);
+    if (ts == null) continue;
+    final day = _dayOf(ts);
+    days.add(day);
+    final str = _num(score, 'strain');
+    if (str != null) strain[day] = str;
+    final ah = _num(score, 'average_heart_rate');
+    if (ah != null) avgHr[day] = ah;
+    final kj = _num(score, 'kilojoule');
+    if (kj != null) cals[day] = kj / _kjPerKcal;
+  }
+
+  return [
+    for (final day in days)
+      WhoopDay(
+        day: day,
+        recoveryPct: recPct[day],
+        hrvMs: hrv[day],
+        restingHr: rhr[day],
+        respiratoryRate: resp[day],
+        spo2Pct: spo2[day],
+        skinTempC: skin[day],
+        sleepHours: sleepH[day],
+        sleepPerformancePct: sleepPerf[day],
+        strain: strain[day],
+        avgHr: avgHr[day],
+        calories: cals[day],
+      ),
+  ]..sort((a, b) => a.day.compareTo(b.day));
 }
 
-/// Smart, one-line read of the day. Leads with recovery, then flags the two
-/// interactions that actually matter: high strain on low recovery (overreach)
-/// and a recovery/strain mismatch worth acting on. Plain language, never a
-/// bare number.
-String whoopInsight(WhoopSnapshot s) {
+/// Smart, one-line read of the latest day. Leads with recovery, then flags the
+/// interactions that matter: high strain on low recovery (overreach), and a
+/// green-light to push when primed and rested. Plain language, never a bare
+/// number.
+String whoopInsight(WhoopDay s) {
   final rec = s.recoveryPct;
   final strain = s.strain;
   if (rec == null) {
     return s.sleepHours != null
-        ? 'Sleep is in. Recovery computes shortly after — check back this morning.'
-        : 'Connected. Your first recovery score lands after your next sleep.';
+        ? 'Sleep is in — your recovery score computes shortly after.'
+        : 'Signals are syncing. Your recovery score lands after your next '
+            'logged sleep.';
   }
   final band = RecoveryBand.of(rec);
-  // Strain context, when we have it.
   if (strain != null) {
     if (band == RecoveryBand.red && strain >= 10) {
       return 'Recovery is low ($rec%) and yesterday ran hard (strain '

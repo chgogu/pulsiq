@@ -8,51 +8,61 @@ import 'package:pulsiq/health/whoop/whoop_providers.dart';
 
 Widget _host(WhoopFetchResult? result) => ProviderScope(
       overrides: [
-        whoopSnapshotProvider.overrideWith((ref) async => result),
+        whoopBodyProvider.overrideWith((ref) async => result),
       ],
       child: const MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(child: WhoopCard()),
-        ),
+        home: Scaffold(body: SingleChildScrollView(child: WhoopCard())),
       ),
     );
 
+WhoopBody _body() => WhoopBody([
+      WhoopDay(
+        day: DateTime.now().subtract(const Duration(days: 1)),
+        recoveryPct: 60,
+        hrvMs: 58,
+        restingHr: 55,
+        strain: 9.0,
+        sleepHours: 7.0,
+      ),
+      WhoopDay(
+        day: DateTime.now(),
+        recoveryPct: 72,
+        hrvMs: 68,
+        restingHr: 52,
+        strain: 11.4,
+        sleepHours: 7.6,
+      ),
+    ]);
+
 void main() {
-  testWidgets('renders the recovery ring, metrics, and insight', (tester) async {
-    final snap = WhoopSnapshot(
-      day: DateTime.now(),
-      recoveryPct: 72,
-      hrvMs: 68,
-      restingHr: 52,
-      strain: 11.4,
-      sleepHours: 7.6,
-      daysOfData: 9,
-    );
-    await tester.pumpWidget(_host(WhoopFetchResult(WhoopFetchStatus.ok, snapshot: snap)));
+  testWidgets('renders recovery ring, latest metrics, averages, and insight',
+      (tester) async {
+    await tester.pumpWidget(
+        _host(WhoopFetchResult(WhoopFetchStatus.ok, body: _body())));
     await tester.pumpAndSettle();
 
-    expect(find.text('72%'), findsOneWidget);
+    expect(find.text('Body signals'), findsOneWidget); // not "WHOOP"
+    expect(find.text('72%'), findsOneWidget); // latest recovery
     expect(find.text('Primed'), findsOneWidget);
-    expect(find.text('HRV'), findsOneWidget);
-    expect(find.text('Day strain'), findsOneWidget);
-    // Smart insight rendered (primed → mentions load/push).
-    expect(find.textContaining('primed', findRichText: true), findsWidgets);
-    // No red overflow stripes.
+    expect(find.text('68 ms'), findsOneWidget); // latest HRV
+    expect(find.text('60-day averages'), findsOneWidget);
+    // Average HRV = (58+68)/2 = 63.
+    expect(find.textContaining('63'), findsWidgets);
+    // Steps honesty note.
+    expect(find.textContaining("Steps aren't tracked"), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('shows a waiting note when connected but no data', (tester) async {
+  testWidgets('waiting state when connected but no scored data', (tester) async {
     await tester
         .pumpWidget(_host(const WhoopFetchResult(WhoopFetchStatus.empty)));
     await tester.pumpAndSettle();
-    expect(find.textContaining('waiting for your next WHOOP sync'),
-        findsOneWidget);
+    expect(find.textContaining('waiting for your next sync'), findsOneWidget);
   });
 
-  testWidgets('hides entirely when WHOOP is not linked', (tester) async {
+  testWidgets('hides entirely when not linked', (tester) async {
     await tester.pumpWidget(_host(null));
     await tester.pumpAndSettle();
     expect(find.byType(Card), findsNothing);
-    expect(find.text('WHOOP'), findsNothing);
   });
 }

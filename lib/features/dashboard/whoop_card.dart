@@ -8,7 +8,7 @@ import '../../domain/whoop.dart';
 import '../../health/whoop/whoop_client.dart';
 import '../../health/whoop/whoop_providers.dart';
 
-/// Recovery band → colour (theme-aware). WHOOP's own green / amber / red.
+/// Recovery band → colour (theme-aware): green / amber / red.
 ({Color ring, Color tint}) _bandColors(RecoveryBand band, Brightness b) {
   final dark = b == Brightness.dark;
   final c = switch (band) {
@@ -19,14 +19,16 @@ import '../../health/whoop/whoop_providers.dart';
   return (ring: c, tint: c.withValues(alpha: dark ? 0.16 : 0.10));
 }
 
-/// Dashboard WHOOP card: a recovery ring, the metrics behind it, and one
-/// smart read of the day. Hidden entirely until WHOOP is linked.
+/// Dashboard "Body signals" card: recovery, HRV, resting HR, strain, sleep and
+/// more from the connected wearable, each with its 60-day average. Hidden
+/// until a wearable is linked. (Deliberately not branded "WHOOP" — it's the
+/// user's body data, whatever the source.)
 class WhoopCard extends ConsumerWidget {
   const WhoopCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(whoopSnapshotProvider);
+    final async = ref.watch(whoopBodyProvider);
     return async.when(
       loading: () => const _Shell(child: _Loading()),
       error: (_, _) => const SizedBox.shrink(),
@@ -34,30 +36,30 @@ class WhoopCard extends ConsumerWidget {
         if (result == null) return const SizedBox.shrink(); // not linked
         return switch (result.status) {
           WhoopFetchStatus.ok => _Shell(
-              onRefresh: () => ref.invalidate(whoopSnapshotProvider),
-              child: _Snapshot(snapshot: result.snapshot!),
+              onRefresh: () => ref.invalidate(whoopBodyProvider),
+              child: _Signals(body: result.body!),
             ),
           WhoopFetchStatus.empty => const _Shell(
               child: _Note(
                 icon: Icons.hourglass_empty,
-                text: 'Connected — waiting for your next WHOOP sync. Your '
-                    'recovery score appears after your next logged sleep.',
+                text: 'Connected — waiting for your next sync. Recovery and '
+                    'sleep appear after your next logged night.',
               ),
             ),
           WhoopFetchStatus.noAccess => _Shell(
               child: _Note(
                 icon: Icons.link_off,
-                text: 'WHOOP session expired. Reconnect in Settings to keep '
-                    'your recovery flowing in.',
+                text: 'Your wearable session expired. Reconnect in Settings to '
+                    'keep your signals flowing in.',
                 action: ('Settings', () => context.push('/settings')),
               ),
             ),
           WhoopFetchStatus.error => _Shell(
-              onRefresh: () => ref.invalidate(whoopSnapshotProvider),
+              onRefresh: () => ref.invalidate(whoopBodyProvider),
               child: const _Note(
                 icon: Icons.cloud_off,
-                text: "Couldn't reach WHOOP. Check that the analysis server is "
-                    'running and you\'re on the same Wi-Fi, then retry.',
+                text: "Couldn't reach your wearable's data. Check the analysis "
+                    'server is running and you\'re on the same Wi-Fi, then retry.',
               ),
             ),
         };
@@ -85,13 +87,13 @@ class _Shell extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.watch_outlined,
+                  Icon(Icons.monitor_heart_outlined,
                       size: 18, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 8),
-                  Text('WHOOP',
+                  Text('Body signals',
                       style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
-                          letterSpacing: 0.5)),
+                          letterSpacing: 0.3)),
                   const Spacer(),
                   if (onRefresh != null)
                     IconButton(
@@ -102,10 +104,7 @@ class _Shell extends StatelessWidget {
                     ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: child,
-              ),
+              Padding(padding: const EdgeInsets.only(right: 8), child: child),
             ],
           ),
         ),
@@ -127,7 +126,7 @@ class _Loading extends StatelessWidget {
           const SizedBox(
               width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
           const SizedBox(width: 14),
-          Text('Reading your recovery…',
+          Text('Reading your recovery and history…',
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ],
@@ -171,19 +170,24 @@ class _Note extends StatelessWidget {
   }
 }
 
-class _Snapshot extends StatelessWidget {
-  const _Snapshot({required this.snapshot});
+class _Signals extends StatelessWidget {
+  const _Signals({required this.body});
 
-  final WhoopSnapshot snapshot;
+  final WhoopBody body;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final s = snapshot;
+    final s = body.latest!;
     final band = s.band;
     final colors = band == null
         ? (ring: theme.colorScheme.primary, tint: theme.colorScheme.primary.withValues(alpha: 0.1))
         : _bandColors(band, theme.brightness);
+
+    String avgOf(num? Function(WhoopDay) pick, {int dp = 0, String suffix = ''}) {
+      final a = body.average(pick);
+      return a == null ? '—' : '${a.toStringAsFixed(dp)}$suffix';
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,19 +197,39 @@ class _Snapshot extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _RecoveryRing(pct: s.recoveryPct, color: colors.ring, band: band),
-            const SizedBox(width: 20),
+            const SizedBox(width: 18),
             Expanded(
               child: Column(
                 children: [
-                  _Metric(label: 'HRV', value: s.hrvMs, unit: 'ms', decimals: 0),
-                  const SizedBox(height: 12),
                   _Metric(
-                      label: 'Resting HR', value: s.restingHr, unit: 'bpm', decimals: 0),
-                  const SizedBox(height: 12),
+                    label: 'HRV',
+                    value: s.hrvMs,
+                    unit: 'ms',
+                    avg: avgOf((d) => d.hrvMs),
+                  ),
+                  const SizedBox(height: 11),
                   _Metric(
-                      label: 'Day strain', value: s.strain, unit: '', decimals: 1, max: 21),
-                  const SizedBox(height: 12),
-                  _Metric(label: 'Sleep', value: s.sleepHours, unit: 'h', decimals: 1),
+                    label: 'Resting HR',
+                    value: s.restingHr,
+                    unit: 'bpm',
+                    avg: avgOf((d) => d.restingHr),
+                  ),
+                  const SizedBox(height: 11),
+                  _Metric(
+                    label: 'Day strain',
+                    value: s.strain,
+                    unit: '',
+                    decimals: 1,
+                    avg: avgOf((d) => d.strain, dp: 1),
+                  ),
+                  const SizedBox(height: 11),
+                  _Metric(
+                    label: 'Sleep',
+                    value: s.sleepHours,
+                    unit: 'h',
+                    decimals: 1,
+                    avg: avgOf((d) => d.sleepHours, dp: 1),
+                  ),
                 ],
               ),
             ),
@@ -215,21 +239,47 @@ class _Snapshot extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: colors.tint,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            whoopInsight(s),
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
-          ),
+          decoration:
+              BoxDecoration(color: colors.tint, borderRadius: BorderRadius.circular(12)),
+          child: Text(whoopInsight(s),
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.35)),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
+        Text('60-day averages',
+            style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _AvgChip(label: 'Recovery', value: avgOf((d) => d.recoveryPct, suffix: '%')),
+            _AvgChip(label: 'HRV', value: avgOf((d) => d.hrvMs, suffix: ' ms')),
+            _AvgChip(label: 'Rest HR', value: avgOf((d) => d.restingHr, suffix: ' bpm')),
+            _AvgChip(label: 'Strain', value: avgOf((d) => d.strain, dp: 1)),
+            _AvgChip(label: 'Sleep', value: avgOf((d) => d.sleepHours, dp: 1, suffix: ' h')),
+            if (body.samples((d) => d.respiratoryRate) > 0)
+              _AvgChip(
+                  label: 'Resp',
+                  value: avgOf((d) => d.respiratoryRate, dp: 1, suffix: '/min')),
+            if (body.samples((d) => d.spo2Pct) > 0)
+              _AvgChip(label: 'SpO₂', value: avgOf((d) => d.spo2Pct, suffix: '%')),
+            if (body.samples((d) => d.calories) > 0)
+              _AvgChip(label: 'Burn', value: avgOf((d) => d.calories, suffix: ' kcal')),
+          ],
+        ),
+        const SizedBox(height: 12),
         Text(
-          '${_asOf(s.day)} · ${s.daysOfData} days synced',
+          'Steps aren\'t tracked by your WHOOP strap — it measures strain, HR, '
+          'recovery and sleep instead.',
           style: theme.textTheme.labelSmall
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+        const SizedBox(height: 6),
+        Text('${_asOf(s.day)} · ${body.scoredRecoveryDays} days of history',
+            style: theme.textTheme.labelSmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -240,10 +290,9 @@ class _Snapshot extends StatelessWidget {
     final diff = today.difference(day).inDays;
     if (diff <= 0) return 'As of today';
     if (diff == 1) return 'As of yesterday';
-    const names = [
-      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
-    ];
-    return 'As of ${names[day.weekday - 1]}';
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    if (diff < 7) return 'As of ${names[day.weekday - 1]}';
+    return 'As of $diff days ago';
   }
 }
 
@@ -258,8 +307,8 @@ class _RecoveryRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SizedBox(
-      width: 116,
-      height: 116,
+      width: 112,
+      height: 112,
       child: CustomPaint(
         painter: _RingPainter(
           progress: (pct ?? 0) / 100,
@@ -270,17 +319,13 @@ class _RecoveryRing extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                pct == null ? '—' : '$pct%',
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w800, height: 1, color: color),
-              ),
+              Text(pct == null ? '—' : '$pct%',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800, height: 1, color: color)),
               const SizedBox(height: 2),
-              Text(
-                band?.label ?? 'Recovery',
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
+              Text(band?.label ?? 'Recovery',
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ),
         ),
@@ -294,15 +339,15 @@ class _Metric extends StatelessWidget {
     required this.label,
     required this.value,
     required this.unit,
+    required this.avg,
     this.decimals = 0,
-    this.max,
   });
 
   final String label;
   final double? value;
   final String unit;
+  final String avg; // preformatted 60-day average
   final int decimals;
-  final double? max;
 
   @override
   Widget build(BuildContext context) {
@@ -310,20 +355,57 @@ class _Metric extends StatelessWidget {
     final v = value;
     final text = v == null
         ? '—'
-        : max != null
-            ? '${v.toStringAsFixed(decimals)} / ${max!.toStringAsFixed(0)}'
-            : '${v.toStringAsFixed(decimals)}${unit.isEmpty ? '' : ' $unit'}';
+        : '${v.toStringAsFixed(decimals)}${unit.isEmpty ? '' : ' $unit'}';
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
-          child: Text(label,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              Text('avg $avg',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.7))),
+            ],
+          ),
         ),
         Text(text,
-            style:
-                theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
       ],
+    );
+  }
+}
+
+class _AvgChip extends StatelessWidget {
+  const _AvgChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label ',
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(value,
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(fontWeight: FontWeight.w700)),
+        ],
+      ),
     );
   }
 }
@@ -339,13 +421,8 @@ class _RingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const stroke = 11.0;
     final inset = (Offset.zero & size).deflate(stroke / 2);
-    canvas.drawArc(
-      inset, 0, math.pi * 2, false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = track,
-    );
+    canvas.drawArc(inset, 0, math.pi * 2, false,
+        Paint()..style = PaintingStyle.stroke..strokeWidth = stroke..color = track);
     canvas.drawArc(
       inset, -math.pi / 2, math.pi * 2 * progress.clamp(0, 1), false,
       Paint()

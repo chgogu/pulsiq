@@ -37,15 +37,15 @@ final whoopDisconnectProvider = Provider<Future<void> Function()>((ref) {
   return () async {
     await ref.read(whoopAuthProvider).disconnect();
     ref.invalidate(whoopConnectedProvider);
-    ref.invalidate(whoopSnapshotProvider);
+    ref.invalidate(whoopBodyProvider);
   };
 });
 
-/// The dashboard WHOOP card's data. Null when WHOOP isn't linked (card hides);
-/// otherwise a result carrying the latest snapshot or a precise empty/error
-/// state.
-final whoopSnapshotProvider = FutureProvider<WhoopFetchResult?>((ref) async {
+/// The dashboard body-signals card data — 60 days of WHOOP-derived signals
+/// with averages. Null when the wearable isn't linked (card hides); otherwise
+/// a result carrying the [WhoopBody] or a precise empty/error state.
+final whoopBodyProvider = FutureProvider<WhoopFetchResult?>((ref) async {
   final connected = await ref.watch(whoopConnectedProvider.future);
   if (!connected) return null;
-  return WhoopHealthSource(ref.read(whoopAuthProvider)).fetchSnapshot();
+  return WhoopHealthSource(ref.read(whoopAuthProvider)).fetchBody();
 });
