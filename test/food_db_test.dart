@@ -82,6 +82,28 @@ void main() {
     });
   });
 
+  group('USDA breadth (foods beyond the curated set)', () {
+    test('common USDA foods now resolve locally', () {
+      for (final food in ['asparagus', 'edamame', 'cod', 'tilapia', 'okra']) {
+        final r = db.resolve(food);
+        expect(r, isNotNull, reason: '"$food" should resolve from USDA');
+        expect(r!.caloriesKcal, greaterThan(0));
+      }
+    });
+
+    test('portions still apply to USDA foods', () {
+      final one = db.resolve('asparagus')!;
+      final two = db.resolve('2 cups asparagus')!;
+      expect(two.caloriesKcal, greaterThan(one.caloriesKcal));
+    });
+
+    test('curated foods still win over USDA on shared names', () {
+      // "rice" must resolve to curated white rice (130 kcal/100g, 158 g cup),
+      // not some bulk USDA rice variant.
+      expect(db.resolve('1 cup rice')!.caloriesKcal, closeTo(205, 6));
+    });
+  });
+
   group('escalation', () {
     test('an unknown food returns null (caller escalates to the model)', () {
       expect(db.resolve('szechuan mapo tofu explosion'), isNull);

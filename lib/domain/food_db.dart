@@ -22,6 +22,7 @@ class FoodDbEntry {
     required this.units,
     required this.defaultGrams,
     required this.quality,
+    this.pri = 0,
   });
 
   final String name;
@@ -34,6 +35,10 @@ class FoodDbEntry {
   final Map<String, double> units; // portion word → grams, for this food
   final double defaultGrams; // one natural unit / serving
   final String quality; // clean | moderate | dense
+
+  /// Match priority: 0 = curated (hand-tuned aliases/portions), 1 = bulk USDA.
+  /// Curated wins ties so common foods resolve to their good defaults.
+  final int pri;
 }
 
 /// The macros a local resolve produced. Pure — the caller maps it to whatever
@@ -91,8 +96,12 @@ class FoodDb {
       }
     }
     // Longest aliases first so "toor dal" wins over "dal", and multi-word
-    // dishes win over their component words.
-    _aliasIndex.sort((a, b) => b.tokens.length.compareTo(a.tokens.length));
+    // dishes win over their component words. Curated (pri 0) breaks ties so a
+    // common food resolves to its hand-tuned entry, not a bulk USDA one.
+    _aliasIndex.sort((a, b) {
+      final byLen = b.tokens.length.compareTo(a.tokens.length);
+      return byLen != 0 ? byLen : a.entry.pri.compareTo(b.entry.pri);
+    });
     _unitWords = {...genericUnits.keys, ..._measureWords};
   }
 
@@ -130,6 +139,7 @@ class FoodDb {
         },
         defaultGrams: (m['defaultGrams'] as num).toDouble(),
         quality: m['quality'] as String? ?? 'moderate',
+        pri: (m['pri'] as num?)?.toInt() ?? 0,
       ));
     }
     return FoodDb._(foods, generic);
