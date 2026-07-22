@@ -117,22 +117,26 @@ class LogRepository {
     await _audit('write', 'food', 'auto_estimate');
   }
 
-  /// Water-type beverages also count toward hydration.
-  Future<void> addBeverage({
+  /// Water-type beverages also count toward hydration. Returns the new row id
+  /// so estimated calories can be patched on after an async LLM round-trip.
+  Future<int> addBeverage({
     required String name,
     required int volumeMl,
     required double sugarContentG,
     required BeverageType type,
+    int? caloriesKcal,
     DateTime? at,
   }) async {
     final when = at ?? DateTime.now();
-    await _db.into(_db.beverageEntries).insert(BeverageEntriesCompanion.insert(
-          name: name,
-          volumeMl: Value(volumeMl),
-          sugarContentG: Value(sugarContentG),
-          type: type,
-          loggedAt: when,
-        ));
+    final id =
+        await _db.into(_db.beverageEntries).insert(BeverageEntriesCompanion.insert(
+              name: name,
+              volumeMl: Value(volumeMl),
+              sugarContentG: Value(sugarContentG),
+              type: type,
+              caloriesKcal: Value(caloriesKcal),
+              loggedAt: when,
+            ));
     if (type == BeverageType.water && volumeMl > 0) {
       await _db.into(_db.hydrationEntries).insert(
             HydrationEntriesCompanion.insert(
@@ -143,6 +147,14 @@ class LogRepository {
           );
     }
     await _audit('write', 'beverage', 'manual_entry');
+    return id;
+  }
+
+  /// Fills in estimated calories on a beverage row after the fact.
+  Future<void> patchBeverageCalories(int id, int caloriesKcal) async {
+    await (_db.update(_db.beverageEntries)..where((t) => t.id.equals(id)))
+        .write(BeverageEntriesCompanion(caloriesKcal: Value(caloriesKcal)));
+    await _audit('write', 'beverage', 'auto_estimate');
   }
 
   Future<void> addHydration({required int amountMl, DateTime? at}) async {

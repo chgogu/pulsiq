@@ -112,15 +112,23 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
           await _saveFood(repo);
         case LogKind.beverage:
           final sugar = double.tryParse(_sugar.text) ?? 0;
-          await repo.addBeverage(
+          final volume = int.tryParse(_volume.text) ?? 0;
+          final id = await repo.addBeverage(
             name: _name.text.trim(),
-            volumeMl: int.tryParse(_volume.text) ?? 0,
+            volumeMl: volume,
             sugarContentG: sugar,
             type: _beverageType,
           );
           if (_beverageType == BeverageType.caffeine) {
             await ref.read(reminderSchedulerProvider).onCaffeineLogged();
           }
+          // Estimate the drink's calories in the background so caloric drinks
+          // join today's intake (a plain tea/coffee resolves to ~0).
+          final desc = [
+            _name.text.trim(),
+            if (volume > 0) '$volume ml',
+          ].join(', ');
+          ref.read(mealEstimatorProvider).estimateAndPatchBeverage(id, desc);
           _sweetnessHack = sweetnessHack(_name.text.trim(), sugar);
         case LogKind.hydration:
           await repo.addHydration(amountMl: int.parse(_amount.text));

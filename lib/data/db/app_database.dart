@@ -35,6 +35,9 @@ class BeverageEntries extends Table {
   IntColumn get volumeMl => integer().withDefault(const Constant(0))();
   RealColumn get sugarContentG => real().withDefault(const Constant(0))();
   TextColumn get type => textEnum<BeverageType>()();
+  // Estimated calories so caloric drinks (juice, latte, soda) count toward
+  // the day's intake. Null until estimated; a plain tea/coffee resolves ~0.
+  IntColumn get caloriesKcal => integer().nullable()();
   DateTimeColumn get loggedAt => dateTime()();
 }
 
@@ -109,7 +112,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -123,6 +126,10 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(foodEntries, foodEntries.carbsG);
             await m.addColumn(foodEntries, foodEntries.fatG);
             await m.addColumn(foodEntries, foodEntries.source);
+          }
+          // v3: calories on beverages so drinks join the day's intake.
+          if (from < 3) {
+            await m.addColumn(beverageEntries, beverageEntries.caloriesKcal);
           }
         },
       );
@@ -215,6 +222,21 @@ class AppDatabase extends _$AppDatabase {
           fiberG: row.read(fiber) ?? 0,
           carbsG: row.read(carbs) ?? 0,
           fatG: row.read(fat) ?? 0,
+        ));
+  }
+
+  /// Today's caloric + sugar contribution from beverages, so drinks join the
+  /// day's intake alongside food.
+  Stream<({int calories, double sugarG})> watchTodayBeverageContribution() {
+    final start = startOfToday();
+    final cal = beverageEntries.caloriesKcal.sum();
+    final sugar = beverageEntries.sugarContentG.sum();
+    final q = selectOnly(beverageEntries)
+      ..addColumns([cal, sugar])
+      ..where(beverageEntries.loggedAt.isBiggerOrEqualValue(start));
+    return q.watchSingle().map((row) => (
+          calories: (row.read(cal) ?? 0).round(),
+          sugarG: row.read(sugar) ?? 0.0,
         ));
   }
 

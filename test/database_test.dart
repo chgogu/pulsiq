@@ -63,6 +63,27 @@ void main() {
     expect(await db.watchTodayDiureticMl().first, (350, 330));
   });
 
+  test('beverage calories + sugar join today intake', () async {
+    // Green tea: no calories → contributes nothing but is still tracked.
+    final tea = await repo.addBeverage(
+        name: 'Green tea',
+        volumeMl: 200,
+        sugarContentG: 0,
+        type: BeverageType.caffeine);
+    // A caloric drink patched after an estimate.
+    final juice = await repo.addBeverage(
+        name: 'Orange juice',
+        volumeMl: 250,
+        sugarContentG: 24,
+        type: BeverageType.caffeine);
+    await repo.patchBeverageCalories(juice, 110);
+    await repo.patchBeverageCalories(tea, 2);
+
+    final contrib = await db.watchTodayBeverageContribution().first;
+    expect(contrib.calories, 112); // 2 + 110
+    expect(contrib.sugarG, 24);
+  });
+
   test('deleteItem removes the row and audits the deletion', () async {
     await repo.addExercise(
         activity: 'Run',

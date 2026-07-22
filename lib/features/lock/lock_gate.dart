@@ -40,10 +40,14 @@ class _LockGateState extends ConsumerState<LockGate>
     if (state == AppLifecycleState.paused) {
       _backgroundedAt = DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
-      final away = _backgroundedAt == null
-          ? Duration.zero
-          : DateTime.now().difference(_backgroundedAt!);
-      if (away > _grace) {
+      // Consume the timestamp on resume. The Face ID sheet itself churns the
+      // lifecycle (inactive→resumed, sometimes paused→resumed); without
+      // clearing this, a stale "backgrounded long ago" value re-locks the app
+      // the instant Face ID succeeds — an unlock loop that only a force-quit
+      // escaped. Clearing it means that dismissal resume computes ~0 away.
+      final at = _backgroundedAt;
+      _backgroundedAt = null;
+      if (at != null && DateTime.now().difference(at) > _grace) {
         ref.read(appLockProvider.notifier).lockIfPossible();
       }
     }

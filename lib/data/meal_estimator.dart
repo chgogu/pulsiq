@@ -82,6 +82,14 @@ class MealEstimator {
       quality: est.quality,
     );
   }
+
+  /// Same, for a beverage — only calories are stored (a plain tea/coffee
+  /// resolves to ~0, a juice or latte to a real number that joins intake).
+  Future<void> estimateAndPatchBeverage(int beverageId, String description) async {
+    final est = await estimate(description);
+    if (est == null) return;
+    await _repo.patchBeverageCalories(beverageId, est.caloriesKcal);
+  }
 }
 
 final mealEstimatorProvider = Provider<MealEstimator>(

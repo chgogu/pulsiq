@@ -271,8 +271,8 @@ class _Signals extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Steps aren\'t tracked by your WHOOP strap — it measures strain, HR, '
-          'recovery and sleep instead.',
+          'Steps show in the WHOOP app but aren\'t in its developer API yet, so '
+          'they can\'t sync here — connect Apple Health for step counts.',
           style: theme.textTheme.labelSmall
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),

@@ -6,8 +6,28 @@ import '../domain/nutrition.dart';
 import '../domain/nutrition_advice.dart';
 import 'providers.dart';
 
-final macroTotalsProvider = StreamProvider<MacroTotals>(
+final _foodMacrosProvider = StreamProvider<MacroTotals>(
     (ref) => ref.watch(appDatabaseProvider).watchMacroTotals());
+
+final _beverageContribProvider =
+    StreamProvider<({int calories, double sugarG})>((ref) =>
+        ref.watch(appDatabaseProvider).watchTodayBeverageContribution());
+
+/// Today's intake = food macros + beverage calories (with beverage sugar
+/// counted as carbs), so logged drinks show up in the fuel analytics.
+final macroTotalsProvider = Provider<AsyncValue<MacroTotals>>((ref) {
+  final food = ref.watch(_foodMacrosProvider);
+  final bev = ref.watch(_beverageContribProvider).value;
+  return food.whenData((f) => bev == null
+      ? f
+      : MacroTotals(
+          calories: f.calories + bev.calories,
+          proteinG: f.proteinG,
+          fiberG: f.fiberG,
+          carbsG: f.carbsG + bev.sugarG,
+          fatG: f.fatG,
+        ));
+});
 
 /// Set to `manual` once the user types their own targets; cleared back to
 /// `auto` by "Use my body profile".

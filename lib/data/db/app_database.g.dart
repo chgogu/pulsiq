@@ -721,6 +721,17 @@ class $BeverageEntriesTable extends BeverageEntries
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<BeverageType>($BeverageEntriesTable.$convertertype);
+  static const VerificationMeta _caloriesKcalMeta = const VerificationMeta(
+    'caloriesKcal',
+  );
+  @override
+  late final GeneratedColumn<int> caloriesKcal = GeneratedColumn<int>(
+    'calories_kcal',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _loggedAtMeta = const VerificationMeta(
     'loggedAt',
   );
@@ -739,6 +750,7 @@ class $BeverageEntriesTable extends BeverageEntries
     volumeMl,
     sugarContentG,
     type,
+    caloriesKcal,
     loggedAt,
   ];
   @override
@@ -776,6 +788,15 @@ class $BeverageEntriesTable extends BeverageEntries
         sugarContentG.isAcceptableOrUnknown(
           data['sugar_content_g']!,
           _sugarContentGMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calories_kcal')) {
+      context.handle(
+        _caloriesKcalMeta,
+        caloriesKcal.isAcceptableOrUnknown(
+          data['calories_kcal']!,
+          _caloriesKcalMeta,
         ),
       );
     }
@@ -818,6 +839,10 @@ class $BeverageEntriesTable extends BeverageEntries
           data['${effectivePrefix}type'],
         )!,
       ),
+      caloriesKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calories_kcal'],
+      ),
       loggedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}logged_at'],
@@ -840,6 +865,7 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
   final int volumeMl;
   final double sugarContentG;
   final BeverageType type;
+  final int? caloriesKcal;
   final DateTime loggedAt;
   const BeverageEntry({
     required this.id,
@@ -847,6 +873,7 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
     required this.volumeMl,
     required this.sugarContentG,
     required this.type,
+    this.caloriesKcal,
     required this.loggedAt,
   });
   @override
@@ -861,6 +888,9 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
         $BeverageEntriesTable.$convertertype.toSql(type),
       );
     }
+    if (!nullToAbsent || caloriesKcal != null) {
+      map['calories_kcal'] = Variable<int>(caloriesKcal);
+    }
     map['logged_at'] = Variable<DateTime>(loggedAt);
     return map;
   }
@@ -872,6 +902,9 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
       volumeMl: Value(volumeMl),
       sugarContentG: Value(sugarContentG),
       type: Value(type),
+      caloriesKcal: caloriesKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caloriesKcal),
       loggedAt: Value(loggedAt),
     );
   }
@@ -889,6 +922,7 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
       type: $BeverageEntriesTable.$convertertype.fromJson(
         serializer.fromJson<String>(json['type']),
       ),
+      caloriesKcal: serializer.fromJson<int?>(json['caloriesKcal']),
       loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
     );
   }
@@ -903,6 +937,7 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
       'type': serializer.toJson<String>(
         $BeverageEntriesTable.$convertertype.toJson(type),
       ),
+      'caloriesKcal': serializer.toJson<int?>(caloriesKcal),
       'loggedAt': serializer.toJson<DateTime>(loggedAt),
     };
   }
@@ -913,6 +948,7 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
     int? volumeMl,
     double? sugarContentG,
     BeverageType? type,
+    Value<int?> caloriesKcal = const Value.absent(),
     DateTime? loggedAt,
   }) => BeverageEntry(
     id: id ?? this.id,
@@ -920,6 +956,7 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
     volumeMl: volumeMl ?? this.volumeMl,
     sugarContentG: sugarContentG ?? this.sugarContentG,
     type: type ?? this.type,
+    caloriesKcal: caloriesKcal.present ? caloriesKcal.value : this.caloriesKcal,
     loggedAt: loggedAt ?? this.loggedAt,
   );
   BeverageEntry copyWithCompanion(BeverageEntriesCompanion data) {
@@ -931,6 +968,9 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
           ? data.sugarContentG.value
           : this.sugarContentG,
       type: data.type.present ? data.type.value : this.type,
+      caloriesKcal: data.caloriesKcal.present
+          ? data.caloriesKcal.value
+          : this.caloriesKcal,
       loggedAt: data.loggedAt.present ? data.loggedAt.value : this.loggedAt,
     );
   }
@@ -943,14 +983,22 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
           ..write('volumeMl: $volumeMl, ')
           ..write('sugarContentG: $sugarContentG, ')
           ..write('type: $type, ')
+          ..write('caloriesKcal: $caloriesKcal, ')
           ..write('loggedAt: $loggedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, volumeMl, sugarContentG, type, loggedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    volumeMl,
+    sugarContentG,
+    type,
+    caloriesKcal,
+    loggedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -960,6 +1008,7 @@ class BeverageEntry extends DataClass implements Insertable<BeverageEntry> {
           other.volumeMl == this.volumeMl &&
           other.sugarContentG == this.sugarContentG &&
           other.type == this.type &&
+          other.caloriesKcal == this.caloriesKcal &&
           other.loggedAt == this.loggedAt);
 }
 
@@ -969,6 +1018,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
   final Value<int> volumeMl;
   final Value<double> sugarContentG;
   final Value<BeverageType> type;
+  final Value<int?> caloriesKcal;
   final Value<DateTime> loggedAt;
   const BeverageEntriesCompanion({
     this.id = const Value.absent(),
@@ -976,6 +1026,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
     this.volumeMl = const Value.absent(),
     this.sugarContentG = const Value.absent(),
     this.type = const Value.absent(),
+    this.caloriesKcal = const Value.absent(),
     this.loggedAt = const Value.absent(),
   });
   BeverageEntriesCompanion.insert({
@@ -984,6 +1035,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
     this.volumeMl = const Value.absent(),
     this.sugarContentG = const Value.absent(),
     required BeverageType type,
+    this.caloriesKcal = const Value.absent(),
     required DateTime loggedAt,
   }) : name = Value(name),
        type = Value(type),
@@ -994,6 +1046,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
     Expression<int>? volumeMl,
     Expression<double>? sugarContentG,
     Expression<String>? type,
+    Expression<int>? caloriesKcal,
     Expression<DateTime>? loggedAt,
   }) {
     return RawValuesInsertable({
@@ -1002,6 +1055,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
       if (volumeMl != null) 'volume_ml': volumeMl,
       if (sugarContentG != null) 'sugar_content_g': sugarContentG,
       if (type != null) 'type': type,
+      if (caloriesKcal != null) 'calories_kcal': caloriesKcal,
       if (loggedAt != null) 'logged_at': loggedAt,
     });
   }
@@ -1012,6 +1066,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
     Value<int>? volumeMl,
     Value<double>? sugarContentG,
     Value<BeverageType>? type,
+    Value<int?>? caloriesKcal,
     Value<DateTime>? loggedAt,
   }) {
     return BeverageEntriesCompanion(
@@ -1020,6 +1075,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
       volumeMl: volumeMl ?? this.volumeMl,
       sugarContentG: sugarContentG ?? this.sugarContentG,
       type: type ?? this.type,
+      caloriesKcal: caloriesKcal ?? this.caloriesKcal,
       loggedAt: loggedAt ?? this.loggedAt,
     );
   }
@@ -1044,6 +1100,9 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
         $BeverageEntriesTable.$convertertype.toSql(type.value),
       );
     }
+    if (caloriesKcal.present) {
+      map['calories_kcal'] = Variable<int>(caloriesKcal.value);
+    }
     if (loggedAt.present) {
       map['logged_at'] = Variable<DateTime>(loggedAt.value);
     }
@@ -1058,6 +1117,7 @@ class BeverageEntriesCompanion extends UpdateCompanion<BeverageEntry> {
           ..write('volumeMl: $volumeMl, ')
           ..write('sugarContentG: $sugarContentG, ')
           ..write('type: $type, ')
+          ..write('caloriesKcal: $caloriesKcal, ')
           ..write('loggedAt: $loggedAt')
           ..write(')'))
         .toString();
@@ -3439,6 +3499,7 @@ typedef $$BeverageEntriesTableCreateCompanionBuilder =
       Value<int> volumeMl,
       Value<double> sugarContentG,
       required BeverageType type,
+      Value<int?> caloriesKcal,
       required DateTime loggedAt,
     });
 typedef $$BeverageEntriesTableUpdateCompanionBuilder =
@@ -3448,6 +3509,7 @@ typedef $$BeverageEntriesTableUpdateCompanionBuilder =
       Value<int> volumeMl,
       Value<double> sugarContentG,
       Value<BeverageType> type,
+      Value<int?> caloriesKcal,
       Value<DateTime> loggedAt,
     });
 
@@ -3485,6 +3547,11 @@ class $$BeverageEntriesTableFilterComposer
         column: $table.type,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnFilters<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get loggedAt => $composableBuilder(
     column: $table.loggedAt,
@@ -3526,6 +3593,11 @@ class $$BeverageEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get loggedAt => $composableBuilder(
     column: $table.loggedAt,
     builder: (column) => ColumnOrderings(column),
@@ -3557,6 +3629,11 @@ class $$BeverageEntriesTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<BeverageType, String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<int> get caloriesKcal => $composableBuilder(
+    column: $table.caloriesKcal,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get loggedAt =>
       $composableBuilder(column: $table.loggedAt, builder: (column) => column);
@@ -3600,6 +3677,7 @@ class $$BeverageEntriesTableTableManager
                 Value<int> volumeMl = const Value.absent(),
                 Value<double> sugarContentG = const Value.absent(),
                 Value<BeverageType> type = const Value.absent(),
+                Value<int?> caloriesKcal = const Value.absent(),
                 Value<DateTime> loggedAt = const Value.absent(),
               }) => BeverageEntriesCompanion(
                 id: id,
@@ -3607,6 +3685,7 @@ class $$BeverageEntriesTableTableManager
                 volumeMl: volumeMl,
                 sugarContentG: sugarContentG,
                 type: type,
+                caloriesKcal: caloriesKcal,
                 loggedAt: loggedAt,
               ),
           createCompanionCallback:
@@ -3616,6 +3695,7 @@ class $$BeverageEntriesTableTableManager
                 Value<int> volumeMl = const Value.absent(),
                 Value<double> sugarContentG = const Value.absent(),
                 required BeverageType type,
+                Value<int?> caloriesKcal = const Value.absent(),
                 required DateTime loggedAt,
               }) => BeverageEntriesCompanion.insert(
                 id: id,
@@ -3623,6 +3703,7 @@ class $$BeverageEntriesTableTableManager
                 volumeMl: volumeMl,
                 sugarContentG: sugarContentG,
                 type: type,
+                caloriesKcal: caloriesKcal,
                 loggedAt: loggedAt,
               ),
           withReferenceMapper: (p0) => p0
