@@ -7,8 +7,8 @@ Map<String, dynamic> product(Map<String, dynamic> nutriments,
       'status': 1,
       'product': {
         'product_name': name,
-        if (brands != null) 'brands': brands,
-        if (servingQ != null) 'serving_quantity': servingQ,
+        'brands': ?brands,
+        'serving_quantity': ?servingQ,
         'nutriments': nutriments,
       },
     };

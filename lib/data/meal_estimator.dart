@@ -6,6 +6,7 @@ import '../domain/meal_vision.dart';
 import '../llm/llm_client.dart';
 import '../voice/voice_pipeline.dart' show llmCoachProvider;
 import 'db/app_database.dart' show AppDatabase, FuelQuality;
+import 'foundation_model.dart';
 import 'log_repository.dart';
 import 'providers.dart';
 
@@ -43,12 +44,21 @@ class MealEstimate {
 /// The frontier model only runs when the free local tiers give up, and every
 /// success is cached so the next identical meal is $0.
 class MealEstimator {
-  MealEstimator(this._coach, this._repo, this._db, this._foodDb);
+  MealEstimator(
+    this._coach,
+    this._repo,
+    this._db,
+    this._foodDb, {
+    FoundationModel fm = const FoundationModel(),
+    // Private named field can't be an initializing formal.
+    // ignore: prefer_initializing_formals
+  }) : _fm = fm;
 
   final LlmCoach _coach;
   final LogRepository _repo;
   final AppDatabase _db;
   final Future<FoodDb> _foodDb;
+  final FoundationModel _fm;
 
   static String _normalize(String s) =>
       s.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -76,7 +86,16 @@ class MealEstimator {
 
     // 1. Local USDA table — $0, offline, ground-truth numbers.
     try {
-      final local = (await _foodDb).resolve(query);
+      final db = await _foodDb;
+      var local = db.resolve(query);
+
+      // 1b. On-device model (iOS 26+) re-parses messy text the rule splitter
+      // missed, then the table supplies the numbers — still $0, still offline.
+      if (local == null && await _fm.available()) {
+        final reparsed = await _fm.parseToItems(description);
+        if (reparsed != null) local = db.resolve(reparsed);
+      }
+
       if (local != null) {
         final est = MealEstimate(
           caloriesKcal: local.caloriesKcal,
@@ -162,5 +181,6 @@ final mealEstimatorProvider = Provider<MealEstimator>(
     ref.read(logRepositoryProvider),
     ref.read(appDatabaseProvider),
     ref.read(foodDbProvider),
+    fm: ref.read(foundationModelProvider),
   ),
 );
