@@ -51,6 +51,7 @@ dependencies:
   speech_to_text: ^7.4.0
   health: ^13.2.0
   google_mlkit_text_recognition: ^0.16.0
+  google_mlkit_image_labeling: ^0.15.0 # on-device food photo first pass
   image_picker: ^1.2.3
   share_plus: ^12.0.2
   flutter_web_auth_2: ^5.0.0 # WHOOP OAuth: ASWebAuthenticationSession / Custom Tab

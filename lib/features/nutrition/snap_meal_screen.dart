@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/db/app_database.dart';
+import '../../data/food_image_classifier.dart';
+import '../../data/meal_estimator.dart' show foodDbProvider;
 import '../../data/nutrition_providers.dart';
 import '../../data/providers.dart';
 import '../../domain/meal_vision.dart';
@@ -28,6 +30,8 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
   List<MealItem> _items = [];
   String _note = '';
   bool _lowConfidence = false;
+  bool _onDevice = false; // identified locally (free) — offer AI re-analyze
+  String? _pendingImage; // base64 kept so the review can escalate to Gemini
 
   @override
   void dispose() {
@@ -41,7 +45,27 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
     if (file == null) return;
     setState(() => _phase = _Phase.analyzing);
     final bytes = await file.readAsBytes();
-    await _analyze(base64Encode(bytes));
+    final image = base64Encode(bytes);
+
+    // C4: on-device first pass. A confident single food (banana, pizza slice)
+    // resolves free; anything the labeler can't name escalates to Gemini.
+    if (_hint.text.trim().isEmpty) {
+      final db = await ref.read(foodDbProvider);
+      final local =
+          await ref.read(foodImageClassifierProvider).classify(file.path, db);
+      if (local != null && mounted) {
+        setState(() {
+          _items = local.items;
+          _note = local.note;
+          _lowConfidence = false;
+          _onDevice = true;
+          _pendingImage = image;
+          _phase = _Phase.review;
+        });
+        return;
+      }
+    }
+    await _analyze(image);
   }
 
   Future<void> _analyzeHintOnly() async {
@@ -51,6 +75,7 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
   }
 
   Future<void> _analyze(String base64Image) async {
+    setState(() => _phase = _Phase.analyzing);
     final raw = await ref
         .read(llmCoachProvider)
         .analyzeMeal(base64Image: base64Image, hint: _hint.text.trim());
@@ -64,6 +89,7 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
         _items = result.items;
         _note = result.note;
         _lowConfidence = result.lowConfidence;
+        _onDevice = false;
         _phase = _Phase.review;
       });
     } catch (_) {
@@ -104,6 +130,10 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
             items: _items,
             note: _note,
             lowConfidence: _lowConfidence,
+            onDevice: _onDevice,
+            onReanalyze: _onDevice && _pendingImage != null
+                ? () => _analyze(_pendingImage!)
+                : null,
             onChanged: (i, item) => setState(() => _items[i] = item),
             onRemove: (i) => setState(() => _items.removeAt(i)),
             onConfirm: _items.isEmpty ? null : _confirm,
@@ -202,11 +232,15 @@ class _Review extends StatelessWidget {
     required this.onChanged,
     required this.onRemove,
     required this.onConfirm,
+    this.onDevice = false,
+    this.onReanalyze,
   });
 
   final List<MealItem> items;
   final String note;
   final bool lowConfidence;
+  final bool onDevice;
+  final VoidCallback? onReanalyze;
   final void Function(int, MealItem) onChanged;
   final void Function(int) onRemove;
   final VoidCallback? onConfirm;
@@ -238,6 +272,28 @@ class _Review extends StatelessWidget {
                             style: theme.textTheme.bodySmall,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (onDevice)
+                Card(
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.offline_bolt_outlined, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text('Identified on your device — free.',
+                              style: theme.textTheme.bodySmall),
+                        ),
+                        if (onReanalyze != null)
+                          TextButton(
+                              onPressed: onReanalyze,
+                              child: const Text('Re-analyze with AI')),
                       ],
                     ),
                   ),
