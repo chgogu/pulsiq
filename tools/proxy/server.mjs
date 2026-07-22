@@ -230,13 +230,21 @@ async function mealVision({ image, hint }) {
   } else {
     console.log(`  no image${hint ? `, hint="${hint}"` : ''}`);
   }
+  // Two modes: a photo to read, or a written description to estimate from.
+  // The contract is identical so the app treats both the same way.
   parts.push({
-    text:
-      'Identify every distinct food item in this meal and estimate its ' +
-      'nutrition. Judge portion size from visual cues (plate, utensil, and ' +
-      'hand scale). Give realistic, usable numbers rather than hedged ones. ' +
-      'Use confidence "low" only if the image is genuinely unclear.' +
-      (hint ? `\n\nThe user says this is: ${hint}` : ''),
+    text: image
+      ? 'Identify every distinct food item in this meal and estimate its ' +
+        'nutrition. Judge portion size from visual cues (plate, utensil, ' +
+        'and hand scale). Give realistic, usable numbers rather than hedged ' +
+        'ones. Use confidence "low" only if the image is genuinely unclear.' +
+        (hint ? `\n\nThe user says this is: ${hint}` : '')
+      : 'Estimate the nutrition of this described meal. Break it into its ' +
+        'distinct components and give one item per food, with realistic ' +
+        'portions inferred from any amounts stated (e.g. "2 egg whites", ' +
+        '"half avocado") or typical serving sizes otherwise. Give usable ' +
+        'numbers, not zeros. Set confidence by how specific the ' +
+        `description is.\n\nThe meal: ${hint}`,
   });
   return generate({ parts, schema: MEAL_SCHEMA });
 }

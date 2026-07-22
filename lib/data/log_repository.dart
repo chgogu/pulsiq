@@ -60,7 +60,9 @@ class LogRepository {
     await _audit('write', 'hydration', 'fab_quick_add');
   }
 
-  Future<void> addFood({
+  /// Returns the new row id so a caller can patch estimated macros onto it
+  /// after an async LLM round-trip (see [patchFoodMacros]).
+  Future<int> addFood({
     required String name,
     required String quantity,
     required FuelQuality quality,
@@ -72,19 +74,47 @@ class LogRepository {
     String source = 'manual',
     DateTime? at,
   }) async {
-    await _db.into(_db.foodEntries).insert(FoodEntriesCompanion.insert(
-          name: name,
-          quantity: Value(quantity),
-          qualityScore: quality,
-          caloriesKcal: Value(caloriesKcal),
-          proteinG: Value(proteinG),
-          fiberG: Value(fiberG),
-          carbsG: Value(carbsG),
-          fatG: Value(fatG),
-          source: Value(source),
-          loggedAt: at ?? DateTime.now(),
-        ));
+    final id =
+        await _db.into(_db.foodEntries).insert(FoodEntriesCompanion.insert(
+              name: name,
+              quantity: Value(quantity),
+              qualityScore: quality,
+              caloriesKcal: Value(caloriesKcal),
+              proteinG: Value(proteinG),
+              fiberG: Value(fiberG),
+              carbsG: Value(carbsG),
+              fatG: Value(fatG),
+              source: Value(source),
+              loggedAt: at ?? DateTime.now(),
+            ));
     await _audit('write', 'food', source == 'manual' ? 'manual_entry' : source);
+    return id;
+  }
+
+  /// Fill in macros on an existing food row — used when nutrition is
+  /// estimated from the entry's text after the row is already saved. Only
+  /// touches the macro columns; leaves name/quantity/quality as the user set
+  /// them. No-op if the row was deleted in the meantime.
+  Future<void> patchFoodMacros(
+    int id, {
+    required int caloriesKcal,
+    required double proteinG,
+    required double fiberG,
+    required double carbsG,
+    required double fatG,
+    FuelQuality? quality,
+  }) async {
+    await (_db.update(_db.foodEntries)..where((t) => t.id.equals(id))).write(
+      FoodEntriesCompanion(
+        caloriesKcal: Value(caloriesKcal),
+        proteinG: Value(proteinG),
+        fiberG: Value(fiberG),
+        carbsG: Value(carbsG),
+        fatG: Value(fatG),
+        qualityScore: quality == null ? const Value.absent() : Value(quality),
+      ),
+    );
+    await _audit('write', 'food', 'auto_estimate');
   }
 
   /// Water-type beverages also count toward hydration.

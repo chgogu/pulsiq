@@ -431,4 +431,10 @@ class LlmCoach {
     }
     return null;
   }
+
+  /// Estimate a meal's nutrition from a written description alone — the same
+  /// vision contract, no image. Powers auto-calorie estimation for typed and
+  /// spoken entries so "quinoa, toor dal, 2 egg whites" turns into numbers.
+  Future<String?> estimateMealFromText(String description) =>
+      analyzeMeal(base64Image: '', hint: description);
 }

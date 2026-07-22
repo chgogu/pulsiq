@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/db/app_database.dart';
 import '../../data/log_repository.dart';
+import '../../data/meal_estimator.dart';
 import '../../data/providers.dart';
 import '../../domain/sweetness.dart';
 import '../../services/notification_service.dart';
@@ -52,6 +53,11 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   BeverageType _beverageType = BeverageType.water;
   ExerciseIntensity _intensity = ExerciseIntensity.moderate;
   String? _sweetnessHack;
+
+  bool _estimating = false;
+  // Full estimate from the last "Estimate" tap — carries fiber/carbs/fat,
+  // which have no visible fields, through to the save.
+  MealEstimate? _estimate;
 
   @override
   void initState() {
@@ -103,13 +109,7 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
     if (existing == null) {
       switch (_kind) {
         case LogKind.food:
-          await repo.addFood(
-            name: _name.text.trim(),
-            quantity: _quantity.text.trim(),
-            quality: _quality,
-            caloriesKcal: int.tryParse(_calories.text.trim()),
-            proteinG: double.tryParse(_protein.text.trim()),
-          );
+          await _saveFood(repo);
         case LogKind.beverage:
           final sugar = double.tryParse(_sugar.text) ?? 0;
           await repo.addBeverage(
@@ -161,12 +161,87 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
     }
     if (!mounted) return;
     final hack = _sweetnessHack;
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).maybePop();
     if (hack != null) {
-      ScaffoldMessenger.of(context)
+      messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(
             content: Text(hack), duration: const Duration(seconds: 5)));
+    } else if (_autoEstimateStarted) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('Estimating calories from your description…'),
+        ));
+    }
+  }
+
+  /// A new food entry. Numbers come from, in order: what the user typed, a
+  /// prior "Estimate" tap, or — if calories are still blank — a background
+  /// estimate that patches the row moments after it's saved. Logging is never
+  /// blocked on the network: the row lands immediately either way.
+  String get _foodDescription =>
+      [_name.text.trim(), _quantity.text.trim()].where((s) => s.isNotEmpty).join(', ');
+
+  Future<void> _saveFood(LogRepository repo) async {
+    final manualCal = int.tryParse(_calories.text.trim());
+    final manualPro = double.tryParse(_protein.text.trim());
+    final est = _estimate;
+
+    if (manualCal != null) {
+      // A number is present (typed, or filled by the Estimate button). Keep
+      // any fiber/carbs/fat from the estimate so those macros aren't lost.
+      await repo.addFood(
+        name: _name.text.trim(),
+        quantity: _quantity.text.trim(),
+        quality: _quality,
+        caloriesKcal: manualCal,
+        proteinG: manualPro ?? est?.proteinG,
+        fiberG: est?.fiberG,
+        carbsG: est?.carbsG,
+        fatG: est?.fatG,
+      );
+      return;
+    }
+
+    // No number yet: save now, estimate in the background, patch when it
+    // lands. Runs through the provider so it survives this sheet closing.
+    final id = await repo.addFood(
+      name: _name.text.trim(),
+      quantity: _quantity.text.trim(),
+      quality: _quality,
+    );
+    final description = _foodDescription;
+    ref.read(mealEstimatorProvider).estimateAndPatch(id, description);
+    _autoEstimateStarted = true;
+  }
+
+  bool _autoEstimateStarted = false;
+
+  Future<void> _runEstimate() async {
+    final description = _foodDescription;
+    if (description.isEmpty) return;
+    setState(() => _estimating = true);
+    final est = await ref.read(mealEstimatorProvider).estimate(description);
+    if (!mounted) return;
+    setState(() {
+      _estimating = false;
+      if (est != null) {
+        _estimate = est;
+        _calories.text = '${est.caloriesKcal}';
+        _protein.text = '${est.proteinG.round()}';
+        _quality = est.quality;
+      }
+    });
+    if (est == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text(
+              "Couldn't estimate that one — type the calories, or use Snap "
+              'a meal for a photo estimate.'),
+        ));
     }
   }
 
@@ -249,9 +324,29 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                 const InputDecoration(labelText: 'Quantity (optional)'),
           ),
           const SizedBox(height: 12),
-          // Optional, because a hand-typed entry shouldn't demand numbers the
-          // user doesn't have — but without them the entry can't reach the
-          // fuel totals, so they're offered rather than hidden.
+          // The automatic path: type the dish, let the model do the numbers.
+          // Leaving these fields blank and saving triggers the same estimate
+          // in the background, so this button is a preview, not a gate.
+          OutlinedButton.icon(
+            onPressed: _estimating || _name.text.trim().isEmpty
+                ? null
+                : _runEstimate,
+            icon: _estimating
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.auto_awesome, size: 18),
+            label: Text(_estimating
+                ? 'Estimating…'
+                : 'Estimate calories from description'),
+            style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44)),
+          ),
+          const SizedBox(height: 12),
+          // Hand-editable, and auto-filled by the button above. Blank is fine
+          // — saving estimates in the background rather than logging zeros.
           Row(
             children: [
               Expanded(
@@ -259,7 +354,7 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                   controller: _calories,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'Calories', hintText: 'optional'),
+                      labelText: 'Calories', hintText: 'auto'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -268,11 +363,15 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                   controller: _protein,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'Protein (g)', hintText: 'optional'),
+                      labelText: 'Protein (g)', hintText: 'auto'),
                 ),
               ),
             ],
           ),
+          if (_estimate != null && !_estimating) ...[
+            const SizedBox(height: 8),
+            _EstimateSummary(estimate: _estimate!),
+          ],
           const SizedBox(height: 12),
           SegmentedButton<FuelQuality>(
             segments: const [
@@ -374,5 +473,50 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
           ),
         ];
     }
+  }
+}
+
+/// The macros an estimate resolved to, shown under the fields so the user can
+/// sanity-check the number before saving.
+class _EstimateSummary extends StatelessWidget {
+  const _EstimateSummary({required this.estimate});
+
+  final MealEstimate estimate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final e = estimate;
+    final parts = [
+      'Fiber ${e.fiberG.round()}g',
+      'Carbs ${e.carbsG.round()}g',
+      'Fat ${e.fatG.round()}g',
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Estimated across ${e.itemCount} '
+            '${e.itemCount == 1 ? 'item' : 'items'} · ${parts.join(' · ')}',
+            style: theme.textTheme.bodySmall,
+          ),
+          if (e.lowConfidence) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Low confidence — worth a quick check or a photo.',
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

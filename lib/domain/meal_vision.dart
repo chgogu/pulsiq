@@ -86,6 +86,17 @@ class MealVisionResult {
       items.fold(0, (sum, i) => sum + i.caloriesKcal);
   double get totalProtein => items.fold(0.0, (sum, i) => sum + i.proteinG);
   double get totalFiber => items.fold(0.0, (sum, i) => sum + i.fiberG);
+  double get totalCarbs => items.fold(0.0, (sum, i) => sum + i.carbsG);
+  double get totalFat => items.fold(0.0, (sum, i) => sum + i.fatG);
+
+  /// A single quality label for a multi-item plate: the least-clean item
+  /// sets the tone, since one dense component defines how the meal eats.
+  String get overallQuality {
+    const rank = {'clean': 0, 'moderate': 1, 'dense': 2};
+    return items
+        .map((i) => i.qualityScore)
+        .reduce((a, b) => (rank[a] ?? 1) >= (rank[b] ?? 1) ? a : b);
+  }
 
   bool get lowConfidence => confidence == 'low';
 }
