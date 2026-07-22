@@ -12,9 +12,61 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { homedir } from 'node:os';
 import { GoogleGenAI } from '@google/genai';
 
 const PORT = Number(process.env.PORT ?? 8790);
+
+// --- WHOOP OAuth (confidential client; secret stays here, never in the app) ---
+// Credentials load from ~/.pulsiq_whoop.env (mode 600). Absent file = WHOOP
+// routes return a clear 503 rather than crashing the whole proxy.
+function loadEnvFile(path) {
+  try {
+    for (const line of readFileSync(path, 'utf8').split('\n')) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
+    }
+  } catch {
+    /* file optional */
+  }
+}
+loadEnvFile(join(homedir(), '.pulsiq_whoop.env'));
+
+const WHOOP = {
+  clientId: process.env.WHOOP_CLIENT_ID,
+  clientSecret: process.env.WHOOP_CLIENT_SECRET,
+  redirectUri: process.env.WHOOP_REDIRECT_URI ?? 'pulsiq://whoop-callback',
+  tokenUrl: 'https://api.prod.whoop.com/oauth/oauth2/token',
+  authUrl: 'https://api.prod.whoop.com/oauth/oauth2/auth',
+  // `offline` is what makes WHOOP mint a refresh token — without it access
+  // dies in ~1h with no renewal.
+  scopes:
+    'offline read:recovery read:cycles read:sleep read:workout ' +
+    'read:profile read:body_measurement',
+};
+
+// Exchanges an auth code (or a refresh token) for WHOOP tokens. Returns the
+// raw token JSON so the app can store the refresh token itself.
+async function whoopToken(params) {
+  const body = new URLSearchParams({
+    client_id: WHOOP.clientId,
+    client_secret: WHOOP.clientSecret,
+    ...params,
+  });
+  const res = await fetch(WHOOP.tokenUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = { error: 'non_json_response', detail: text.slice(0, 200) };
+  }
+  return { status: res.status, json };
+}
 // Vision-capable, fast, and current. Override with GEMINI_MODEL if needed;
 // `node list-models.mjs` prints what the key can actually reach.
 const MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.6-flash';
@@ -297,6 +349,62 @@ createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     return send(200, { ok: true, provider: 'gemini', model: MODEL });
   }
+
+  // Non-secret WHOOP client config so the app can build the authorize URL
+  // (client_id is public in OAuth; only the secret stays server-side).
+  if (req.method === 'GET' && req.url === '/v1/whoop/config') {
+    if (!WHOOP.clientId) {
+      return send(503, { error: 'whoop_not_configured' });
+    }
+    return send(200, {
+      client_id: WHOOP.clientId,
+      redirect_uri: WHOOP.redirectUri,
+      authorize_url: WHOOP.authUrl,
+      scopes: WHOOP.scopes,
+    });
+  }
+
+  const whoopGrant =
+    req.method === 'POST' && req.url === '/v1/whoop/exchange'
+      ? 'authorization_code'
+      : req.method === 'POST' && req.url === '/v1/whoop/refresh'
+        ? 'refresh_token'
+        : null;
+  if (whoopGrant) {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', async () => {
+      const started = Date.now();
+      if (!WHOOP.clientId || !WHOOP.clientSecret) {
+        return send(503, { error: 'whoop_not_configured' });
+      }
+      try {
+        const p = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        const params =
+          whoopGrant === 'authorization_code'
+            ? {
+                grant_type: 'authorization_code',
+                code: p.code,
+                redirect_uri: p.redirect_uri ?? WHOOP.redirectUri,
+              }
+            : {
+                grant_type: 'refresh_token',
+                refresh_token: p.refresh_token,
+                scope: WHOOP.scopes,
+              };
+        const { status, json } = await whoopToken(params);
+        console.log(`${req.url} -> ${status} in ${Date.now() - started}ms`);
+        // Pass WHOOP's status through so the app can tell "bad code" from
+        // "network down". Never log token values.
+        send(status === 200 ? 200 : 502, json);
+      } catch (err) {
+        console.error(`${req.url} FAILED:`, err?.message ?? err);
+        send(502, { error: String(err?.message ?? err) });
+      }
+    });
+    return;
+  }
+
   const handler = ROUTES[req.url ?? ''];
   if (req.method !== 'POST' || !handler) return send(404, { error: 'no route' });
 
@@ -323,5 +431,12 @@ createServer((req, res) => {
 }).listen(PORT, '0.0.0.0', () => {
   console.log(`PulsIQ proxy (Gemini) on http://0.0.0.0:${PORT}`);
   console.log(`Model: ${MODEL}`);
-  console.log('Routes: /v1/meal-vision  /v1/coach  /v1/order-hack  /health');
+  console.log(
+    `WHOOP: ${WHOOP.clientId ? 'configured' : 'NOT configured'} ` +
+      `(redirect ${WHOOP.redirectUri})`,
+  );
+  console.log(
+    'Routes: /v1/meal-vision  /v1/coach  /v1/order-hack  ' +
+      '/v1/whoop/{config,exchange,refresh}  /health',
+  );
 });

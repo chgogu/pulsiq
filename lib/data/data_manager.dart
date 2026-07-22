@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../health/whoop/whoop_client.dart' show whoopRefreshTokenKey;
 import '../security/key_vault.dart';
 import '../security/secret_store.dart';
 import 'db/app_database.dart';
@@ -99,6 +100,8 @@ class DataManager {
       }
     });
     await KeyVault(_secretStore).wipe();
+    // Third-party links are device-held secrets too — clear the WHOOP token.
+    await _secretStore.delete(whoopRefreshTokenKey);
   }
 }
 

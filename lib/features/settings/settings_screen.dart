@@ -10,6 +10,7 @@ import '../../data/data_manager.dart';
 import '../../data/forecast_providers.dart';
 import '../../data/providers.dart';
 import '../../health/health_providers.dart';
+import '../../health/whoop/whoop_providers.dart';
 import '../../security/app_lock.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -89,6 +90,8 @@ class SettingsScreen extends ConsumerWidget {
                     },
             ),
           ),
+          const SizedBox(height: 12),
+          const _WhoopCard(),
           const SizedBox(height: 12),
           Card(
             child: SwitchListTile(
@@ -172,6 +175,65 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+/// Connect / disconnect WHOOP. When linked it becomes the biometric source
+/// that lifts the PulsIQ Score out of "fuel-only" — no paid Apple program
+/// needed, since WHOOP is a network API rather than HealthKit.
+class _WhoopCard extends ConsumerStatefulWidget {
+  const _WhoopCard();
+
+  @override
+  ConsumerState<_WhoopCard> createState() => _WhoopCardState();
+}
+
+class _WhoopCardState extends ConsumerState<_WhoopCard> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final connected = ref.watch(whoopConnectedProvider).value ?? false;
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.watch_outlined),
+        title: const Text('WHOOP'),
+        subtitle: Text(_busy
+            ? 'Opening WHOOP…'
+            : connected
+                ? 'Connected — HRV, resting HR, recovery, and sleep feed your score'
+                : 'Connect for recovery, HRV, resting HR, and sleep'),
+        trailing: _busy
+            ? const SizedBox(
+                width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            : TextButton(
+                onPressed: () => connected ? _disconnect() : _connect(),
+                child: Text(connected ? 'Disconnect' : 'Connect'),
+              ),
+      ),
+    );
+  }
+
+  Future<void> _connect() async {
+    setState(() => _busy = true);
+    final ok = await ref.read(whoopConnectorProvider)();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(ok
+            ? 'WHOOP connected — your pulse now leads the dashboard.'
+            : 'WHOOP sign-in didn\'t complete. Make sure the proxy is running '
+                'and try again.'),
+      ));
+  }
+
+  Future<void> _disconnect() async {
+    setState(() => _busy = true);
+    await ref.read(whoopDisconnectProvider)();
+    if (!mounted) return;
+    setState(() => _busy = false);
   }
 }
 

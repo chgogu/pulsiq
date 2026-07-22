@@ -6,6 +6,8 @@ import '../features/dashboard/pulse_card.dart' show BiometricDelta;
 import '../domain/baseline_engine.dart';
 import '../domain/health_models.dart';
 import 'health_source.dart';
+import 'whoop/whoop_client.dart';
+import 'whoop/whoop_providers.dart';
 
 const demoHealthSettingKey = 'demo_biometrics';
 const healthConnectedSettingKey = 'health_connected';
@@ -23,9 +25,15 @@ final _healthConnectedProvider = FutureProvider<bool>((ref) async {
   return v == 'true';
 });
 
+/// Source priority: Demo (explicit dev toggle) > WHOOP > Apple Health /
+/// Health Connect > none. WHOOP outranks the platform source because it works
+/// on a free-signed build without the paid HealthKit entitlement.
 final healthSourceProvider = Provider<HealthSource>((ref) {
   if (ref.watch(demoHealthEnabledProvider).value ?? false) {
     return const DemoHealthSource();
+  }
+  if (ref.watch(whoopConnectedProvider).value ?? false) {
+    return WhoopHealthSource(ref.read(whoopAuthProvider));
   }
   if (ref.watch(_healthConnectedProvider).value ?? false) {
     return PlatformHealthSource();
@@ -65,7 +73,11 @@ final biometricHistoryProvider =
   await ref.read(appDatabaseProvider).logAudit(
         action: 'read',
         dataType: 'biometrics',
-        source: source is DemoHealthSource ? 'demo' : 'wearable',
+        source: switch (source) {
+          DemoHealthSource() => 'demo',
+          WhoopHealthSource() => 'whoop',
+          _ => 'wearable',
+        },
         purpose: 'baseline_sync',
       );
   return data;

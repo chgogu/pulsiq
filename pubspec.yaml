@@ -53,6 +53,7 @@ dependencies:
   google_mlkit_text_recognition: ^0.16.0
   image_picker: ^1.2.3
   share_plus: ^12.0.2
+  flutter_web_auth_2: ^5.0.0 # WHOOP OAuth: ASWebAuthenticationSession / Custom Tab
 
 dev_dependencies:
   flutter_test:

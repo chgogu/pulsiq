@@ -4,6 +4,19 @@
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>com.pulsiq.pulsiq</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>pulsiq</string>
+				</array>
+			</dict>
+		</array>
 		<key>NSHealthShareUsageDescription</key>
 		<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
 		<key>NSCameraUsageDescription</key>
