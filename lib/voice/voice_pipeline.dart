@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/ai_settings.dart';
 import '../data/db/app_database.dart';
 import '../data/providers.dart';
 import '../data/api_config.dart';
@@ -47,10 +48,21 @@ class VoiceState {
   }
 }
 
-/// The API is deployment config (no keys in the app) and always has a value
-/// now that [apiBaseUrl] defaults to production. Tests override this provider
-/// with [MockLlmBackend] rather than relying on an unset URL.
-final llmCoachProvider = Provider<LlmCoach>((_) {
+/// Offline by default: the on-device parser handles voice logs and menu scans
+/// with no network call, so the app is fully functional with no cloud AI. The
+/// cloud backend is used only when the user has opted into AI assist (see
+/// [aiAssistEnabledProvider]) — currently there's no UI to turn it on, so this
+/// stays on-device until bring-your-own-key lands.
+///
+/// Tests override this provider directly rather than depend on the setting.
+final llmCoachProvider = Provider<LlmCoach>((ref) {
+  final aiOn = ref.watch(aiAssistEnabledProvider).value ?? false;
+  if (!aiOn) {
+    return LlmCoach(
+      primary: const MockLlmBackend(),
+      fallback: const MockLlmBackend(),
+    );
+  }
   return LlmCoach(
     primary: ProxyBackend(baseUrl: apiBaseUrl, model: 'claude'),
     fallback: ProxyBackend(baseUrl: apiBaseUrl, model: 'gemini-flash'),

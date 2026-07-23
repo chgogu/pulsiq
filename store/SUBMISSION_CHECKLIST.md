@@ -47,10 +47,12 @@ decision or an account action that can't be done from the repo.
   confirm you agree. Flip it to `true` (and file the annual self-classification
   report) if you disagree.
 
-- **YOU — GEMINI BILLING. This is the launch blocker.** The API key is on the
-  free tier, which allows **20 requests per minute across the entire key** —
-  not per user. Testing exhausted it in one burst. With real users the app will
-  return errors constantly. Enable billing on the Gemini API key before launch.
+- **Cloud AI is off — no Gemini billing needed to launch.** Nutrition resolves
+  on-device (bundled USDA table + on-device parser); voice logs and menu scans
+  use the on-device keyword parser. Nothing calls Gemini in the shipping
+  configuration, so its free-tier quota is irrelevant. The Worker still runs,
+  but only its WHOOP routes are used, and those don't touch Gemini. Bring-your-
+  own-key AI is a planned post-launch addition (see below).
 
 - **YOU — App Review demo account.** Review needs to exercise the app without
   a WHOOP account or your Apple Health data. Either supply a test account in
@@ -87,6 +89,14 @@ decision or an account action that can't be done from the repo.
   integrations, settings. **Turn your integrations back on first** — the
   analytics card with real HRV and sleep is the product's whole argument, and
   an empty state sells nothing.
+
+## Planned, not blocking launch
+
+- **Bring-your-own-key AI.** Users can't currently connect their own model.
+  When added, it will be an API key (OpenRouter or per-provider) that bills the
+  user's own API account — NOT a "sign in with Google to use your ChatGPT/
+  Claude subscription" flow, which is impossible: those consumer subscriptions
+  expose no API, and no Google login grants a third-party app access to them.
 
 ## Known limits worth stating in review notes
 
