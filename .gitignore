@@ -52,3 +52,4 @@ app.*.map.json
 # tools/ios/README or the commit that added it) — /build/ alone only matches
 # a real directory, so ignore the bare name too.
 /build
+store/screenshots/

@@ -57,8 +57,25 @@ decision or an account action that can't be done from the repo.
   App Review notes, or explain that core features (manual/photo logging,
   nutrition) work with no integration connected.
 
-- **YOU — screenshots and listing copy** for the required device sizes.
-  `store/STORE_LISTING.md` has the copy; screenshots aren't captured yet.
+- **YOU — screenshots.** Copy is in `store/STORE_LISTING.md`; the images are
+  not captured yet, and they need the phone on a **USB cable**.
+
+  The iOS Simulator can't run this app at all: `google_mlkit_*` ships no
+  arm64-simulator slices, so a simulator build links x86_64-only, and iOS 26
+  simulators on Apple Silicon are arm64-only. Verified — the built
+  `Runner.app` binary is `architecture: x86_64` and the simulator refuses it
+  with "This app needs to be updated by the developer."
+
+  So screenshots come from the device. `libimobiledevice` is installed, but it
+  talks to usbmuxd and cannot see a Wi-Fi-paired phone even though
+  `xcrun devicectl` can. Plug in, unlock, trust, then:
+
+  ```bash
+  ./tools/store/capture_screenshots.sh
+  ```
+
+  It walks through the six screens and prints each image's pixel size, since
+  App Store Connect rejects anything that isn't an exact expected size.
 
 - **YOU — App Privacy answers** in App Store Connect must match
   `PrivacyInfo.xcprivacy`: Health & Fitness and Audio collected, not linked to
