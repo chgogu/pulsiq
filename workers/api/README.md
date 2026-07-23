@@ -62,10 +62,27 @@ binary and anyone willing to unpack an IPA can read it. Its job is narrower:
 stop this endpoint being a trivially discoverable open relay in front of a
 metered Gemini key.
 
-The layer that actually bounds abuse is per-IP rate limiting, configured at the
-Cloudflare edge rather than in code — **this is not yet set up**. Add a Rate
-Limiting rule in the dashboard on `api.pulsiqapp.com/v1/*` (something like 60
-requests/minute per IP) before the app has real users.
+The layer that actually bounds abuse is the per-IP rate limit, which **is**
+live: 10 requests/minute on the AI routes and 120 on the cheap ones, returning
+429 with `retry-after`.
+
+Note which mechanism enforces it. Cloudflare's Rate Limiting *binding* is
+configured (`ratelimits` in wrangler.jsonc) but never returned
+`success: false` on this account — 12 sequential calls against a limit of 5 all
+passed. Shipping that alone would have been a limiter that does nothing, so the
+enforcing layer is a per-colo cache counter in `src/index.js`. The binding is
+kept as defence in depth and takes over cleanly if it starts working.
+
+Both fail open: if the limiter breaks, a real user losing their meal photo is
+worse than an attacker getting a burst through.
+
+## Gemini quota is the real ceiling
+
+The free tier allows **20 requests per minute across the whole key**, not per
+user — one burst of testing exhausted it. The per-IP AI limit is deliberately
+set to 10 so a single heavy user can't starve everyone, but that only rations a
+ceiling that is far too low for a shipped app. **Enable billing on the Gemini
+API key before launch.**
 
 Proper per-user auth would mean issuing a token per account at sign-in and
 verifying it here. That's the right end state once accounts exist.

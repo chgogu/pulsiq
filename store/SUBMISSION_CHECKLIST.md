@@ -26,20 +26,31 @@ decision or an account action that can't be done from the repo.
   `UIBackgroundModes`, matching what the app actually does.
 - **Privacy policy** at `store/PRIVACY_POLICY.md`, contact
   `pulsiq.app@gmail.com`, live site at pulsiqapp.com.
+- **Rate limiting is live and verified.** Per-IP, per-minute: 10 on the AI
+  routes, 120 on the cheap ones, returning 429 with `retry-after`. Verified in
+  production — 21 calls through, then 429s.
+
+  Note: Cloudflare's Rate Limiting *binding* is configured but **did not
+  enforce** on this account (12 sequential calls against a limit of 5 all
+  passed). The enforcing layer is a per-colo cache counter in
+  `workers/api/src/index.js`; the binding is kept as defence in depth and will
+  take over if it starts working.
 
 ## Before you upload
 
-- **YOU — export compliance.** `ITSAppUsesNonExemptEncryption` is not set, so
-  App Store Connect asks on every upload. The app uses HTTPS and SQLCipher for
-  local storage. Most apps in this position qualify for the exemption and
-  declare `false`, but it's a legal declaration about *your* product, so make
-  it deliberately rather than letting a tool answer for you. Add it to
-  `ios/Runner/Info.plist` once decided, and the prompt stops.
+- **YOU — CONFIRM export compliance.** `ITSAppUsesNonExemptEncryption` is now
+  set to `false` in `ios/Runner/Info.plist`, which stops App Store Connect
+  asking on every upload. That declares the app uses only *exempt* encryption:
+  HTTPS for transport and SQLCipher (AES) purely to protect the user's own
+  data at rest on their own device. That is the standard position for this
+  profile, but it is a legal declaration about your product — read it and
+  confirm you agree. Flip it to `true` (and file the annual self-classification
+  report) if you disagree.
 
-- **YOU — rate limiting.** `api.pulsiqapp.com` is a public endpoint in front of
-  a metered Gemini key. The bearer token ships inside the IPA and can be
-  extracted. Add a Cloudflare Rate Limiting rule on `/v1/*` (≈60 req/min per
-  IP) before you have real users. See `workers/api/README.md`.
+- **YOU — GEMINI BILLING. This is the launch blocker.** The API key is on the
+  free tier, which allows **20 requests per minute across the entire key** —
+  not per user. Testing exhausted it in one burst. With real users the app will
+  return errors constantly. Enable billing on the Gemini API key before launch.
 
 - **YOU — App Review demo account.** Review needs to exercise the app without
   a WHOOP account or your Apple Health data. Either supply a test account in

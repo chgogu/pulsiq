@@ -371,6 +371,87 @@ function authorized(request, env) {
   return diff === 0;
 }
 
+/**
+ * Per-IP rate limit. The AI routes get the tighter bucket because each call is
+ * a metered Gemini request; WHOOP routes are cheap passthroughs and only need
+ * to be stopped from being hammered.
+ *
+ * Fails open on purpose: if the limiter itself is unavailable, a real user
+ * losing their meal photo is worse than an attacker getting a burst through.
+ */
+// Per IP, per minute. Deliberately well under the *account-wide* Gemini
+// ceiling (the free tier allows 20 requests/minute across the whole key), so
+// one heavy user can't starve everyone else. A real session peaks around 5:
+// a meal snap, a re-snap, a voice log, a menu scan.
+const AI_LIMIT = 10;
+const API_LIMIT = 120; // per minute, per IP — cheap passthroughs
+
+/**
+ * Counts requests per IP per minute in the colo cache.
+ *
+ * This is the layer that actually enforces. Cloudflare's Rate Limiting
+ * *binding* is also wired below, but on this account it never returned
+ * `success: false` — 12 sequential calls against a limit of 5 all passed — so
+ * relying on it alone would have shipped a limiter that does nothing.
+ *
+ * The cache is per-colo, which is the right granularity anyway: a single
+ * abusive IP lands in one colo, so its counter is the one that matters.
+ * Read-modify-write can lose a few increments under heavy concurrency; that
+ * costs a handful of extra requests, not the bound.
+ */
+async function cacheCounterExceeded(ip, path, limit) {
+  const window = Math.floor(Date.now() / 60000);
+  // Must be a real URL for the Cache API, and one that can't collide with a
+  // route we actually serve.
+  const key = new Request(
+    `https://ratelimit.pulsiq.internal/${encodeURIComponent(ip)}/${window}/${
+      limit === AI_LIMIT ? 'ai' : 'api'
+    }`,
+  );
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  const count = hit ? Number(await hit.text()) || 0 : 0;
+  if (count >= limit) return true;
+  await cache.put(
+    key,
+    new Response(String(count + 1), {
+      // Expire with the window, so counters can't accumulate forever.
+      headers: { 'cache-control': 'max-age=60' },
+    }),
+  );
+  return false;
+}
+
+/**
+ * Per-IP rate limit. AI routes get the tighter bucket because each call is a
+ * metered Gemini request; WHOOP routes are cheap passthroughs.
+ *
+ * Fails open on purpose: if the limiter itself breaks, a real user losing
+ * their meal photo is worse than an attacker getting a burst through.
+ */
+async function rateLimited(request, env, path) {
+  const isAi = Boolean(ROUTES[path]);
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+  const limit = isAi ? AI_LIMIT : API_LIMIT;
+
+  try {
+    if (await cacheCounterExceeded(ip, path, limit)) return true;
+  } catch {
+    // fall through to the binding
+  }
+
+  // Defence in depth: costs nothing, and takes over properly if the binding
+  // starts enforcing on this account.
+  const binding = isAi ? env.AI_LIMITER : env.API_LIMITER;
+  if (!binding) return false;
+  try {
+    const { success } = await binding.limit({ key: `${ip}:${isAi ? 'ai' : 'api'}` });
+    return !success;
+  } catch {
+    return false;
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -388,6 +469,16 @@ export default {
     }
 
     if (!authorized(request, env)) return json(401, { error: 'unauthorized' });
+
+    if (await rateLimited(request, env, path)) {
+      return new Response(
+        JSON.stringify({ error: 'rate_limited' }),
+        {
+          status: 429,
+          headers: { 'content-type': 'application/json', 'retry-after': '60' },
+        },
+      );
+    }
 
     // Non-secret WHOOP client config so the app can build the authorize URL
     // (client_id is public in OAuth; only the secret stays server-side).

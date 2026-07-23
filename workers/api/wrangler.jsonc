@@ -15,6 +15,23 @@
 
   "observability": { "enabled": true },
 
+  // Per-IP rate limits. The app token ships inside the IPA and can be
+  // extracted, so it is not what bounds abuse — this is. Two buckets because
+  // the costs differ wildly: a meal photo is a vision call, a WHOOP fetch is
+  // a cheap passthrough.
+  "ratelimits": [
+    {
+      "name": "AI_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      "name": "API_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 120, "period": 60 }
+    }
+  ],
+
   // Secrets (set with `wrangler secret put`, never committed):
   //   GEMINI_API_KEY      — from ~/.pulsiq_gemini_key
   //   WHOOP_CLIENT_ID     — from ~/.pulsiq_whoop.env
