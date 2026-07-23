@@ -5,6 +5,7 @@ import '../domain/food_db.dart';
 import '../domain/meal_vision.dart';
 import '../llm/llm_client.dart';
 import '../voice/voice_pipeline.dart' show llmCoachProvider;
+import 'ai_settings.dart';
 import 'db/app_database.dart' show AppDatabase, FuelQuality;
 import 'foundation_model.dart';
 import 'log_repository.dart';
@@ -50,15 +51,22 @@ class MealEstimator {
     this._db,
     this._foodDb, {
     FoundationModel fm = const FoundationModel(),
-    // Private named field can't be an initializing formal.
+    Future<bool> Function() aiEnabled = _offlineOnly,
+    // Private named fields can't be initializing formals.
     // ignore: prefer_initializing_formals
-  }) : _fm = fm;
+  })  : _fm = fm,
+        // ignore: prefer_initializing_formals
+        _aiEnabled = aiEnabled;
 
   final LlmCoach _coach;
   final LogRepository _repo;
   final AppDatabase _db;
   final Future<FoodDb> _foodDb;
   final FoundationModel _fm;
+
+  /// Gates the cloud (Gemini) escalation. Default keeps everything on-device.
+  final Future<bool> Function() _aiEnabled;
+  static Future<bool> _offlineOnly() async => false;
 
   static String _normalize(String s) =>
       s.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -114,7 +122,10 @@ class MealEstimator {
       // asset missing / parse issue → just fall through to the model
     }
 
-    // 2. Gemini — the escalation, only for what the table couldn't resolve.
+    // 2. Gemini — the escalation, only for what the table couldn't resolve,
+    // and only when the user has opted into cloud assist. Off by default:
+    // unresolved offline just means "log it manually," never a network call.
+    if (!await _aiEnabled()) return null;
     final raw = await _coach.estimateMealFromText(description);
     if (raw == null) return null;
     final MealVisionResult result;
@@ -182,5 +193,6 @@ final mealEstimatorProvider = Provider<MealEstimator>(
     ref.read(appDatabaseProvider),
     ref.read(foodDbProvider),
     fm: ref.read(foundationModelProvider),
+    aiEnabled: () => aiAssistEnabled(ref),
   ),
 );

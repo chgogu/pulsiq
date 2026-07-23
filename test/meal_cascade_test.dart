@@ -53,11 +53,15 @@ void main() {
   setUp(() => db = AppDatabase.forTesting(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  MealEstimator estimator(LlmBackend backend) => MealEstimator(
+  // aiEnabled defaults false now (offline-only), so tests exercising the LLM
+  // escalation opt in explicitly — which documents that escalation is gated.
+  MealEstimator estimator(LlmBackend backend, {bool ai = true}) =>
+      MealEstimator(
         LlmCoach(primary: backend, fallback: backend),
         LogRepository(db),
         db,
         Future.value(foodDb),
+        aiEnabled: () async => ai,
       );
 
   test('a locally-known food resolves without touching the LLM', () async {
@@ -80,6 +84,23 @@ void main() {
     final second = await est.estimate('szechuan mapo explosion');
     expect(second!.caloriesKcal, 600);
     expect(backend.calls, 1, reason: 'cache should prevent a repeat call');
+  });
+
+  test('with AI off, an unknown food never touches the network', () async {
+    // The shipping default: nutrition is a lookup, and an unresolved food
+    // means "log it manually", not a metered API call.
+    final backend = _CountingBackend();
+    final est = await estimator(backend, ai: false)
+        .estimate('szechuan mapo explosion');
+    expect(est, isNull);
+    expect(backend.calls, 0);
+  });
+
+  test('with AI off, a locally-known food still resolves', () async {
+    final est = await estimator(_NeverCalledBackend(), ai: false)
+        .estimate('2 eggs');
+    expect(est, isNotNull);
+    expect(est!.caloriesKcal, closeTo(143, 3));
   });
 
   test('the local resolve is cached too, so a repeat stays free', () async {

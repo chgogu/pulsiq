@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../data/ai_settings.dart';
 import '../../data/db/app_database.dart';
 import '../../data/food_image_classifier.dart';
-import '../../data/meal_estimator.dart' show foodDbProvider;
+import '../../data/meal_estimator.dart'
+    show foodDbProvider, mealEstimatorProvider, MealEstimate;
 import '../../data/nutrition_providers.dart';
 import '../../data/providers.dart';
 import '../../domain/meal_vision.dart';
@@ -76,6 +78,34 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
 
   Future<void> _analyze(String base64Image) async {
     setState(() => _phase = _Phase.analyzing);
+
+    // Offline-first. The on-device labeler already had its turn in _pick; here
+    // we either look the hint up in the local food table (still on-device,
+    // still $0) or, only if the user has connected their own AI, escalate to
+    // it. With no AI connected and no hint, there's nothing left to try but
+    // manual entry — say so honestly rather than blaming the photo.
+    final aiOn = await ref.read(aiAssistEnabledProvider.future);
+    if (!aiOn) {
+      final hint = _hint.text.trim();
+      if (hint.isEmpty) {
+        setState(() => _phase = _Phase.error);
+        return;
+      }
+      final est = await ref.read(mealEstimatorProvider).estimate(hint);
+      if (est == null) {
+        setState(() => _phase = _Phase.error);
+        return;
+      }
+      setState(() {
+        _items = [_itemFromEstimate(hint, est)];
+        _note = 'Matched from your food library.';
+        _lowConfidence = est.lowConfidence;
+        _onDevice = true;
+        _phase = _Phase.review;
+      });
+      return;
+    }
+
     final raw = await ref
         .read(llmCoachProvider)
         .analyzeMeal(base64Image: base64Image, hint: _hint.text.trim());
@@ -96,6 +126,17 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
       setState(() => _phase = _Phase.error);
     }
   }
+
+  static MealItem _itemFromEstimate(String name, MealEstimate est) => MealItem(
+        name: name,
+        portion: '1 serving',
+        caloriesKcal: est.caloriesKcal,
+        proteinG: est.proteinG,
+        fiberG: est.fiberG,
+        carbsG: est.carbsG,
+        fatG: est.fatG,
+        qualityScore: est.quality.name,
+      );
 
   Future<void> _confirm() async {
     final repo = ref.read(logRepositoryProvider);
@@ -118,6 +159,9 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Re-analyze escalates to the cloud model, so it only makes sense when the
+    // user has connected their own AI. Offline, the on-device match is final.
+    final aiOn = ref.watch(aiAssistEnabledProvider).value ?? false;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -131,7 +175,7 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
             note: _note,
             lowConfidence: _lowConfidence,
             onDevice: _onDevice,
-            onReanalyze: _onDevice && _pendingImage != null
+            onReanalyze: aiOn && _onDevice && _pendingImage != null
                 ? () => _analyze(_pendingImage!)
                 : null,
             onChanged: (i, item) => setState(() => _items[i] = item),
@@ -475,12 +519,12 @@ class _ErrorView extends StatelessWidget {
             Icon(Icons.no_photography_outlined,
                 size: 48, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
-            Text("Couldn't read that meal",
+            Text("Couldn't identify that meal",
                 style: theme.textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(
-              'Try a clearer photo in good light, or add a hint describing '
-              'the dish.',
+              'Type what it is in the hint box and we\'ll look it up in your '
+              'food library — no internet needed.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
