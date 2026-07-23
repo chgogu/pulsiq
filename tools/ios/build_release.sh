@@ -39,8 +39,13 @@ plutil -p "$APP/Info.plist" | grep -q CFBundleIdentifier || {
 echo "OK: $APP"
 
 if [ "${1:-}" = "--install" ]; then
+  # Match the UUID column by shape, not position — the device name ("iPhone 15
+  # Pro Max") has a variable number of words, so a fixed field index picked up
+  # "15" instead of the identifier.
   UDID=$(xcrun devicectl list devices 2>/dev/null \
-    | awk '/iPhone/ {print $(NF-3); exit}')
+    | grep -iE 'iphone|ipad' \
+    | grep -oE '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}' \
+    | head -1)
   [ -n "$UDID" ] || { echo "No iPhone found. Plug it in and unlock it." >&2; exit 1; }
   xcrun devicectl device install app --device "$UDID" "$APP"
 fi
