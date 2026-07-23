@@ -45,7 +45,9 @@ void main() {
     expect(find.text('72%'), findsOneWidget); // latest recovery
     expect(find.text('Primed'), findsOneWidget);
     expect(find.text('68 ms'), findsOneWidget); // latest HRV
-    expect(find.text('60-day averages'), findsOneWidget);
+    // The heading now names its source, since Apple Health gets its own card
+    // with a different window.
+    expect(find.text('60-day averages · WHOOP'), findsOneWidget);
     // Average HRV = (58+68)/2 = 63.
     expect(find.textContaining('63'), findsWidgets);
     // Steps honesty note (WHOOP app has steps, but not via its API).

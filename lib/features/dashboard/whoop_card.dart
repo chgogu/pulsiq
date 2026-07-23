@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/whoop.dart';
+import '../../health/body_signals.dart';
+import '../../health/health_providers.dart';
 import '../../health/whoop/whoop_client.dart';
 import '../../health/whoop/whoop_providers.dart';
 
@@ -19,10 +21,12 @@ import '../../health/whoop/whoop_providers.dart';
   return (ring: c, tint: c.withValues(alpha: dark ? 0.16 : 0.10));
 }
 
-/// Dashboard "Body signals" card: recovery, HRV, resting HR, strain, sleep and
-/// more from the connected wearable, each with its 60-day average. Hidden
-/// until a wearable is linked. (Deliberately not branded "WHOOP" — it's the
-/// user's body data, whatever the source.)
+/// WHOOP's own card: recovery, strain, HRV, resting HR and sleep against their
+/// 60-day averages. Hidden unless WHOOP is linked.
+///
+/// This and [PlatformHealthCard] are deliberately separate widgets fed by
+/// separate providers, so disconnecting one source never blanks the other's
+/// analytics.
 class WhoopCard extends ConsumerWidget {
   const WhoopCard({super.key});
 
@@ -30,16 +34,24 @@ class WhoopCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(whoopBodyProvider);
     return async.when(
-      loading: () => const _Shell(child: _Loading()),
+      loading: () => const _Shell(title: 'Body signals', child: _Loading()),
       error: (_, _) => const SizedBox.shrink(),
       data: (result) {
         if (result == null) return const SizedBox.shrink(); // not linked
         return switch (result.status) {
           WhoopFetchStatus.ok => _Shell(
+              title: 'Body signals',
               onRefresh: () => ref.invalidate(whoopBodyProvider),
-              child: _Signals(body: result.body!),
+              child: _Signals(
+                signals: BodySignals(
+                  body: result.body!,
+                  source: BodySignalSource.whoop,
+                  windowDays: 60,
+                ),
+              ),
             ),
           WhoopFetchStatus.empty => const _Shell(
+              title: 'Body signals',
               child: _Note(
                 icon: Icons.hourglass_empty,
                 text: 'Connected — waiting for your next sync. Recovery and '
@@ -47,6 +59,7 @@ class WhoopCard extends ConsumerWidget {
               ),
             ),
           WhoopFetchStatus.noAccess => _Shell(
+              title: 'Body signals',
               child: _Note(
                 icon: Icons.link_off,
                 text: 'Your wearable session expired. Reconnect in Settings to '
@@ -55,6 +68,7 @@ class WhoopCard extends ConsumerWidget {
               ),
             ),
           WhoopFetchStatus.error => _Shell(
+              title: 'Body signals',
               onRefresh: () => ref.invalidate(whoopBodyProvider),
               child: const _Note(
                 icon: Icons.cloud_off,
@@ -68,9 +82,36 @@ class WhoopCard extends ConsumerWidget {
   }
 }
 
-class _Shell extends StatelessWidget {
-  const _Shell({required this.child, this.onRefresh});
+/// Apple Health / Health Connect's own card: HRV, resting HR, sleep, steps and
+/// active minutes over the last 30 days. Stands alone — it renders whether or
+/// not WHOOP is connected.
+class PlatformHealthCard extends ConsumerWidget {
+  const PlatformHealthCard({super.key});
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(platformBodySignalsProvider);
+    return async.when(
+      error: (_, _) => const SizedBox.shrink(),
+      loading: () => const _Shell(title: 'Health analytics', child: _Loading()),
+      data: (signals) {
+        if (signals == null || signals.isEmpty) {
+          return const SizedBox.shrink(); // not connected, or nothing synced
+        }
+        return _Shell(
+          title: '${signals.source.label} analytics',
+          onRefresh: () => ref.invalidate(platformBodySignalsProvider),
+          child: _Signals(signals: signals),
+        );
+      },
+    );
+  }
+}
+
+class _Shell extends StatelessWidget {
+  const _Shell({required this.title, required this.child, this.onRefresh});
+
+  final String title;
   final Widget child;
   final VoidCallback? onRefresh;
 
@@ -90,7 +131,7 @@ class _Shell extends StatelessWidget {
                   Icon(Icons.monitor_heart_outlined,
                       size: 18, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 8),
-                  Text('Body signals',
+                  Text(title,
                       style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           letterSpacing: 0.3)),
@@ -171,13 +212,15 @@ class _Note extends StatelessWidget {
 }
 
 class _Signals extends StatelessWidget {
-  const _Signals({required this.body});
+  const _Signals({required this.signals});
 
-  final WhoopBody body;
+  final BodySignals signals;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final body = signals.body;
+    final source = signals.source;
     final s = body.latest!;
     final band = s.band;
     final colors = band == null
@@ -189,6 +232,45 @@ class _Signals extends StatelessWidget {
       return a == null ? '—' : '${a.toStringAsFixed(dp)}$suffix';
     }
 
+    // Recovery and strain are WHOOP scores; steps come only from the phone
+    // platforms. Showing a row the source can't fill would just read "—".
+    final metrics = <Widget>[
+      _Metric(
+        label: 'HRV',
+        value: s.hrvMs,
+        unit: 'ms',
+        avg: avgOf((d) => d.hrvMs),
+      ),
+      _Metric(
+        label: 'Resting HR',
+        value: s.restingHr,
+        unit: 'bpm',
+        avg: avgOf((d) => d.restingHr),
+      ),
+      if (source.hasRecoveryAndStrain)
+        _Metric(
+          label: 'Day strain',
+          value: s.strain,
+          unit: '',
+          decimals: 1,
+          avg: avgOf((d) => d.strain, dp: 1),
+        ),
+      _Metric(
+        label: 'Sleep',
+        value: s.sleepHours,
+        unit: 'h',
+        decimals: 1,
+        avg: avgOf((d) => d.sleepHours, dp: 1),
+      ),
+      if (source.hasSteps && body.samples((d) => d.steps) > 0)
+        _Metric(
+          label: 'Steps',
+          value: s.steps?.toDouble(),
+          unit: '',
+          avg: avgOf((d) => d.steps),
+        ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -196,40 +278,17 @@ class _Signals extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _RecoveryRing(pct: s.recoveryPct, color: colors.ring, band: band),
-            const SizedBox(width: 18),
+            if (source.hasRecoveryAndStrain) ...[
+              _RecoveryRing(pct: s.recoveryPct, color: colors.ring, band: band),
+              const SizedBox(width: 18),
+            ],
             Expanded(
               child: Column(
                 children: [
-                  _Metric(
-                    label: 'HRV',
-                    value: s.hrvMs,
-                    unit: 'ms',
-                    avg: avgOf((d) => d.hrvMs),
-                  ),
-                  const SizedBox(height: 11),
-                  _Metric(
-                    label: 'Resting HR',
-                    value: s.restingHr,
-                    unit: 'bpm',
-                    avg: avgOf((d) => d.restingHr),
-                  ),
-                  const SizedBox(height: 11),
-                  _Metric(
-                    label: 'Day strain',
-                    value: s.strain,
-                    unit: '',
-                    decimals: 1,
-                    avg: avgOf((d) => d.strain, dp: 1),
-                  ),
-                  const SizedBox(height: 11),
-                  _Metric(
-                    label: 'Sleep',
-                    value: s.sleepHours,
-                    unit: 'h',
-                    decimals: 1,
-                    avg: avgOf((d) => d.sleepHours, dp: 1),
-                  ),
+                  for (final (i, m) in metrics.indexed) ...[
+                    if (i > 0) const SizedBox(height: 11),
+                    m,
+                  ],
                 ],
               ),
             ),
@@ -241,11 +300,14 @@ class _Signals extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration:
               BoxDecoration(color: colors.tint, borderRadius: BorderRadius.circular(12)),
-          child: Text(whoopInsight(s),
+          child: Text(
+              source.hasRecoveryAndStrain
+                  ? whoopInsight(s)
+                  : platformInsight(s, body),
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.35)),
         ),
         const SizedBox(height: 16),
-        Text('60-day averages',
+        Text('${signals.windowDays}-day averages · ${source.label}',
             style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600)),
@@ -254,11 +316,21 @@ class _Signals extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _AvgChip(label: 'Recovery', value: avgOf((d) => d.recoveryPct, suffix: '%')),
+            if (source.hasRecoveryAndStrain) ...[
+              _AvgChip(
+                  label: 'Recovery',
+                  value: avgOf((d) => d.recoveryPct, suffix: '%')),
+              _AvgChip(label: 'Strain', value: avgOf((d) => d.strain, dp: 1)),
+            ],
             _AvgChip(label: 'HRV', value: avgOf((d) => d.hrvMs, suffix: ' ms')),
             _AvgChip(label: 'Rest HR', value: avgOf((d) => d.restingHr, suffix: ' bpm')),
-            _AvgChip(label: 'Strain', value: avgOf((d) => d.strain, dp: 1)),
             _AvgChip(label: 'Sleep', value: avgOf((d) => d.sleepHours, dp: 1, suffix: ' h')),
+            if (body.samples((d) => d.steps) > 0)
+              _AvgChip(label: 'Steps', value: avgOf((d) => d.steps)),
+            if (body.samples((d) => d.exerciseMinutes) > 0)
+              _AvgChip(
+                  label: 'Active',
+                  value: avgOf((d) => d.exerciseMinutes, suffix: ' min')),
             if (body.samples((d) => d.respiratoryRate) > 0)
               _AvgChip(
                   label: 'Resp',
@@ -269,15 +341,16 @@ class _Signals extends StatelessWidget {
               _AvgChip(label: 'Burn', value: avgOf((d) => d.calories, suffix: ' kcal')),
           ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          'Steps show in the WHOOP app but aren\'t in its developer API yet, so '
-          'they can\'t sync here — connect Apple Health for step counts.',
-          style: theme.textTheme.labelSmall
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
+        if (source.footnote case final note?) ...[
+          const SizedBox(height: 12),
+          Text(
+            note,
+            style: theme.textTheme.labelSmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ],
         const SizedBox(height: 6),
-        Text('${_asOf(s.day)} · ${body.scoredRecoveryDays} days of history',
+        Text('${_asOf(s.day)} · ${body.days.length} days of history',
             style: theme.textTheme.labelSmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       ],

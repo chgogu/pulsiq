@@ -92,6 +92,8 @@ class WhoopDay {
     this.strain,
     this.avgHr,
     this.calories,
+    this.steps,
+    this.exerciseMinutes,
   });
 
   final DateTime day;
@@ -107,12 +109,18 @@ class WhoopDay {
   final double? avgHr;
   final double? calories; // kcal
 
+  /// Apple Health / Health Connect only — WHOOP's developer API exposes
+  /// neither.
+  final int? steps;
+  final int? exerciseMinutes;
+
   bool get isEmpty =>
       recoveryPct == null &&
       hrvMs == null &&
       restingHr == null &&
       strain == null &&
-      sleepHours == null;
+      sleepHours == null &&
+      steps == null;
 
   RecoveryBand? get band =>
       recoveryPct == null ? null : RecoveryBand.of(recoveryPct!);

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +6,7 @@ import '../data/providers.dart';
 import '../features/dashboard/pulse_card.dart' show BiometricDelta;
 import '../domain/baseline_engine.dart';
 import '../domain/health_models.dart';
+import 'body_signals.dart';
 import 'health_source.dart';
 import 'whoop/whoop_client.dart';
 import 'whoop/whoop_providers.dart';
@@ -96,6 +98,45 @@ final healthDisconnectProvider = Provider<Future<void> Function()>((ref) {
     );
     ref.invalidate(platformHealthConnectedProvider);
   };
+});
+
+/// How far back the platform-health card looks. 30 days ending today.
+const platformHealthWindowDays = 30;
+
+/// Apple Health / Health Connect signals for their own dashboard card — 30
+/// days ending today. Deliberately independent of WHOOP: each source gets its
+/// own card, so turning one off never hides the other.
+final platformBodySignalsProvider = FutureProvider<BodySignals?>((ref) async {
+  final demo = ref.watch(demoHealthEnabledProvider).value ?? false;
+  final platform = ref.watch(platformHealthConnectedProvider).value ?? false;
+  if (!demo && !platform) return null;
+
+  final now = DateTime.now();
+  final source = demo
+      ? const DemoHealthSource()
+      : PlatformHealthSource() as HealthSource;
+  final days = await source.fetchDaily(
+    from: now.subtract(const Duration(days: platformHealthWindowDays)),
+    to: now,
+  );
+  if (days.isEmpty) return null;
+
+  await ref.read(appDatabaseProvider).logAudit(
+        action: 'read',
+        dataType: 'biometrics',
+        source: demo ? 'demo' : 'health_kit_or_connect',
+        purpose: 'body_signals_card',
+      );
+
+  return BodySignals(
+    body: bodyFromBiometrics(days),
+    source: demo
+        ? BodySignalSource.demo
+        : defaultTargetPlatform == TargetPlatform.iOS
+            ? BodySignalSource.appleHealth
+            : BodySignalSource.healthConnect,
+    windowDays: platformHealthWindowDays,
+  );
 });
 
 final biometricHistoryProvider =

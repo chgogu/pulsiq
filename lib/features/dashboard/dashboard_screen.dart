@@ -57,9 +57,12 @@ class DashboardScreen extends ConsumerWidget {
           const MorningResetCard(),
           ScoreHero(result: score),
           const SizedBox(height: 16),
-          // WHOOP recovery leads when linked — it's the biometric headline.
-          // Hides itself entirely when WHOOP isn't connected.
+          // One card per connected source, each hiding itself when its own
+          // source is off. WHOOP leads when linked — recovery is the biometric
+          // headline — with Apple Health / Health Connect directly under it.
+          // Independent so switching one off never blanks the other.
           const WhoopCard(),
+          const PlatformHealthCard(),
           // Fuel and its interpretation sit directly under the score: this is
           // the food data the user came to see, and burying it under the
           // forecast/walk cards meant it never made it above the fold.
