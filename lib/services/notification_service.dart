@@ -190,6 +190,7 @@ class ReminderScheduler {
   /// Rebuilds the standing daily reminders from settings. Safe to call any
   /// time — it always cancels first, so it can't stack duplicates.
   Future<void> syncDailyReminders() async {
+    final now = DateTime.now();
     final hours = ReminderRules.hourlyWaterHours();
     await _notifications.cancelIds([
       for (final h in hours) NotificationService.waterIdBase + h,
@@ -202,7 +203,7 @@ class ReminderScheduler {
           id: NotificationService.waterIdBase + h,
           hour: h,
           title: 'Hydration',
-          body: ReminderRules.waterMessage(h),
+          body: ReminderRules.waterMessage(now, h),
           channelId: 'hydration',
           channelName: 'Hydration reminders',
         );
@@ -210,13 +211,11 @@ class ReminderScheduler {
     }
 
     if (await activityReminderEnabled()) {
-      final doy =
-          DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
       await _notifications.scheduleDailyAt(
         id: NotificationService.activityId,
         hour: ReminderRules.activityHour,
         title: 'Time to move',
-        body: ReminderRules.activityMessage(doy),
+        body: ReminderRules.activityMessage(now),
         channelId: 'activity',
         channelName: 'Activity reminders',
       );

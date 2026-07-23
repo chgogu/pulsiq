@@ -31,12 +31,21 @@ void main() {
     });
 
     test('copy rotates rather than repeating the same line all day', () {
+      final now = DateTime(2026, 3, 14);
       final hours = ReminderRules.hourlyWaterHours();
-      final messages = {for (final h in hours) ReminderRules.waterMessage(h)};
+      final messages = {
+        for (final h in hours) ReminderRules.waterMessage(now, h)
+      };
       expect(messages.length, greaterThan(1));
       for (final m in messages) {
         expect(m.trim(), isNotEmpty);
       }
+    });
+
+    test('the same hour reads differently on different days', () {
+      final a = ReminderRules.waterMessage(DateTime(2026, 3, 14), 10);
+      final b = ReminderRules.waterMessage(DateTime(2026, 3, 15), 10);
+      expect(a, isNot(b));
     });
   });
 
@@ -52,7 +61,8 @@ void main() {
 
     test('message varies across the year and is never empty', () {
       final seen = {
-        for (var doy = 0; doy < 366; doy++) ReminderRules.activityMessage(doy)
+        for (var doy = 0; doy < 366; doy++)
+          ReminderRules.activityMessage(DateTime(2026, 1, 1).add(Duration(days: doy)))
       };
       expect(seen.length, greaterThan(1));
       for (final m in seen) {
@@ -60,9 +70,12 @@ void main() {
       }
     });
 
-    test('any day of year maps to a message without going out of range', () {
-      for (var doy = 0; doy < 366; doy++) {
-        expect(ReminderRules.activityMessage(doy), isNotEmpty);
+    test('every day of every year maps to a message, never out of range', () {
+      for (var year = 2026; year <= 2030; year++) {
+        for (var doy = 0; doy < 366; doy++) {
+          final day = DateTime(year, 1, 1).add(Duration(days: doy));
+          expect(ReminderRules.activityMessage(day), isNotEmpty);
+        }
       }
     });
   });

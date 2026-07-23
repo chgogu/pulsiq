@@ -58,20 +58,21 @@ class ReminderRules {
       ];
 
   /// Rotating hydration copy so 14 daily reminders don't read identically.
-  static String waterMessage(int hour) {
+  static String waterMessage(DateTime now, int hour) {
+    final dayOfYear = now.difference(DateTime(now.year)).inDays;
     const lines = [
-      'Time for a glass of water.',
+      'Time for a glass of water?',
       'Hydration check — a few sips now keeps the afternoon steady.',
       'Water break. Your energy curve will thank you.',
       'Another glass? Steady hydration beats catching up later.',
       'Quick sip — dehydration shows up as tiredness long before thirst.',
       'Top up your water.',
     ];
-    return lines[hour % lines.length];
+    return lines[(hour + dayOfYear) % lines.length]; // dayOfYear adds variety
   }
 
   /// Evening nudge to move — varied so it stays motivating, not nagging.
-  static String activityMessage(int dayOfYear) {
+  static String activityMessage(DateTime now) {
     const lines = [
       'Evening moment — a 10-minute walk now pays off in tonight\'s recovery.',
       'Got 15 minutes? A quick workout or walk steadies your evening energy.',
@@ -79,6 +80,10 @@ class ReminderRules {
       'A little movement now — your heart rate and sleep both benefit.',
       'Wind down by moving first: a brisk walk, a stretch, anything counts.',
     ];
-    return lines[dayOfYear % lines.length];
+    final dayOfYear = now.difference(DateTime(now.year)).inDays;
+    // Add the year to the day of year to ensure the message rotation doesn't
+    // repeat on the same day of the week in consecutive years.
+    return lines[(dayOfYear + now.year) % lines.length];
   }
+
 }

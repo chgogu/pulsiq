@@ -2,6 +2,20 @@
   "name": "pulsiq",
   "compatibility_date": "2026-07-22",
   "assets": {
-    "directory": "build/web"
-  }
+    // The marketing site, NOT build/web. Pointing this at Flutter's build
+    // output published the raw web app (default Flutter shell, "A new Flutter
+    // project.") to pulsiqapp.com — and `flutter clean` would wipe the deploy
+    // source out from under it. site/index.html is generated from
+    // store/landing_page.html by tools/site/build_site.sh.
+    "directory": "site"
+  },
+  // Bind the real domain to this Worker. Without these, `wrangler deploy`
+  // only updates pulsiq.pulsiq-app.workers.dev and pulsiqapp.com keeps
+  // serving whatever was attached to it before.
+  // www is intentionally absent: it has its own proxied CNAME plus a Redirect
+  // Rule to the apex, and binding it here fails with "already has externally
+  // managed DNS records".
+  "routes": [{ "pattern": "pulsiqapp.com", "custom_domain": true }],
+  // Keep the workers.dev URL alive as a staging check before the domain.
+  "workers_dev": true
 }

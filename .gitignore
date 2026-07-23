@@ -46,3 +46,8 @@ app.*.map.json
 
 # Wrangler (Cloudflare) local state — the deploy config itself is tracked.
 /.wrangler/
+
+# `build` may be a symlink to a directory outside iCloud Drive (see
+# tools/ios/README or the commit that added it) — /build/ alone only matches
+# a real directory, so ignore the bare name too.
+/build
