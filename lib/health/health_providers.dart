@@ -43,17 +43,35 @@ final healthSourceProvider = Provider<HealthSource>((ref) {
   return const EmptyHealthSource();
 });
 
+/// Why the last connect attempt failed, or null if it was a plain refusal.
+/// Lets the Integrations screen distinguish "you tapped Don't Allow" from
+/// "the request itself errored".
+class HealthConnectError extends Notifier<String?> {
+  @override
+  String? build() => null;
+  @override
+  set state(String? value) => super.state = value;
+}
+
+final healthConnectErrorProvider =
+    NotifierProvider<HealthConnectError, String?>(HealthConnectError.new);
+
 /// One-tap connect from the Pulse card. Persists the grant so the source
 /// activates on every launch; audited like every health-data access.
 final healthConnectorProvider = Provider<Future<bool> Function()>((ref) {
   return () async {
-    final granted = await PlatformHealthSource().requestPermissions();
+    final source = PlatformHealthSource();
+    final granted = await source.requestPermissions();
+    ref.read(healthConnectErrorProvider.notifier).state =
+        granted ? null : source.lastError;
     final db = ref.read(appDatabaseProvider);
     await db.logAudit(
       action: 'read',
       dataType: 'health_permissions',
       source: 'health_kit_or_connect',
-      purpose: granted ? 'granted' : 'denied',
+      purpose: granted
+          ? 'granted'
+          : (source.lastError == null ? 'denied' : 'error'),
     );
     if (granted) {
       await db.setSetting(healthConnectedSettingKey, 'true');

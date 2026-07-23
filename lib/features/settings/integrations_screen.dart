@@ -91,13 +91,18 @@ class IntegrationsScreen extends ConsumerWidget {
       BuildContext context, WidgetRef ref) async {
     final granted = await ref.read(healthConnectorProvider)();
     if (!context.mounted) return;
+    final error = ref.read(healthConnectErrorProvider);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
+        duration: Duration(seconds: error == null ? 4 : 8),
         content: Text(granted
             ? 'Connected — pulling your telemetry now.'
-            : 'Permission not granted. You can enable it in the Health app '
-                'under Sharing → Apps.'),
+            : error != null
+                // Don't pass an internal failure off as a refusal.
+                ? 'Couldn\'t reach Health: $error'
+                : 'Permission not granted. You can enable it in the Health '
+                    'app under Sharing → Apps.'),
       ));
   }
 

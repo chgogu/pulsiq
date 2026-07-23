@@ -33,22 +33,43 @@ class EmptyHealthSource implements HealthSource {
 class PlatformHealthSource implements HealthSource {
   final _health = Health();
 
-  static final _types = [
-    HealthDataType.RESTING_HEART_RATE,
-    HealthDataType.HEART_RATE_VARIABILITY_RMSSD,
-    HealthDataType.RESPIRATORY_RATE,
-    HealthDataType.SLEEP_ASLEEP,
-    HealthDataType.STEPS,
-    HealthDataType.EXERCISE_TIME,
-  ];
+  /// HealthKit and Health Connect expose HRV under different statistics, and
+  /// the `health` plugin only maps each one on its own platform: iOS has
+  /// SDNN, Android has RMSSD. Asking for the wrong one makes the whole
+  /// authorization request fail, taking every other type down with it.
+  static HealthDataType get hrvType =>
+      defaultTargetPlatform == TargetPlatform.iOS
+          ? HealthDataType.HEART_RATE_VARIABILITY_SDNN
+          : HealthDataType.HEART_RATE_VARIABILITY_RMSSD;
+
+  /// Only the types the current platform actually supports —
+  /// `EXERCISE_TIME` is likewise iOS-only.
+  static List<HealthDataType> get types => [
+        HealthDataType.RESTING_HEART_RATE,
+        hrvType,
+        HealthDataType.RESPIRATORY_RATE,
+        HealthDataType.SLEEP_ASLEEP,
+        HealthDataType.STEPS,
+        if (defaultTargetPlatform == TargetPlatform.iOS)
+          HealthDataType.EXERCISE_TIME,
+      ];
+
+  /// Set when the last permission request threw, so the UI can say what
+  /// actually went wrong instead of a bare "not granted".
+  String? lastError;
 
   @override
   Future<bool> requestPermissions() async {
     if (kIsWeb) return false;
+    lastError = null;
     try {
       await _health.configure();
-      return await _health.requestAuthorization(_types);
-    } catch (_) {
+      return await _health.requestAuthorization(types);
+    } catch (e) {
+      // Swallowing this silently is what made a mis-declared data type look
+      // like the user tapping "Don't Allow".
+      lastError = '$e';
+      debugPrint('PulsIQ: health authorization failed: $e');
       return false;
     }
   }
@@ -63,10 +84,11 @@ class PlatformHealthSource implements HealthSource {
       final points = await _health.getHealthDataFromTypes(
         startTime: from,
         endTime: to,
-        types: _types,
+        types: types,
       );
       return _aggregate(points, from, to);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('PulsIQ: health fetch failed: $e');
       return const [];
     }
   }
@@ -118,8 +140,7 @@ class PlatformHealthSource implements HealthSource {
         DailyBiometrics(
           day: entry.key,
           restingHr: avgOf(entry.value, HealthDataType.RESTING_HEART_RATE),
-          hrvMs: avgOf(
-              entry.value, HealthDataType.HEART_RATE_VARIABILITY_RMSSD),
+          hrvMs: avgOf(entry.value, hrvType),
           respiratoryRate:
               avgOf(entry.value, HealthDataType.RESPIRATORY_RATE),
           sleepHours: sleepHoursOf(entry.value),
