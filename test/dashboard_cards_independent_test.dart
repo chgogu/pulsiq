@@ -72,7 +72,8 @@ void main() {
 
     expect(find.text('Body signals'), findsNothing);
     expect(find.text('Apple Health analytics'), findsOneWidget);
-    expect(find.text('Steps'), findsOneWidget);
+    // Metric row plus its trend-chart chip.
+    expect(find.text('Steps'), findsNWidgets(2));
   });
 
   testWidgets('Apple Health off still leaves WHOOP readable', (tester) async {
@@ -81,7 +82,18 @@ void main() {
 
     expect(find.text('Apple Health analytics'), findsNothing);
     expect(find.text('Body signals'), findsOneWidget);
-    expect(find.text('Day strain'), findsOneWidget);
+    expect(find.text('Day strain'), findsNWidgets(2));
+  });
+
+  testWidgets('WHOOP card drops the steps caveat and the history footer',
+      (tester) async {
+    await tester.pumpWidget(_host(whoop: _whoopOk(), platform: null));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('developer API'), findsNothing);
+    expect(find.textContaining('connect Apple Health for step'), findsNothing);
+    expect(find.textContaining('days of history'), findsNothing);
+    expect(find.textContaining('As of'), findsNothing);
   });
 
   testWidgets('neither connected shows no analytics cards', (tester) async {

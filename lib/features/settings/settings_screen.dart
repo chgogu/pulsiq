@@ -7,7 +7,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../auth/auth_service.dart';
 import '../../data/data_manager.dart';
-import '../../data/forecast_providers.dart';
 import '../../data/providers.dart';
 import '../../domain/reminder_rules.dart';
 import '../../health/health_providers.dart';
@@ -104,33 +103,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           const _RemindersCard(),
-          const SizedBox(height: 12),
-          Card(
-            child: SwitchListTile(
-              secondary: const Icon(Icons.science_outlined),
-              title: const Text('Demo biometrics'),
-              subtitle:
-                  const Text('Generated wearable data for previews/dev'),
-              value: ref.watch(demoHealthEnabledProvider).value ?? false,
-              onChanged: (v) async {
-                await ref
-                    .read(appDatabaseProvider)
-                    .setSetting(demoHealthSettingKey, v ? 'true' : 'false');
-                ref.invalidate(demoHealthEnabledProvider);
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: SwitchListTile(
-              secondary: const Icon(Icons.nightlight_round),
-              title: const Text('Preview evening forecast'),
-              subtitle: const Text('Show tonight\'s forecast card any time'),
-              value: ref.watch(forceForecastProvider),
-              onChanged: (v) =>
-                  ref.read(forceForecastProvider.notifier).state = v,
-            ),
-          ),
+          // The "Demo biometrics" and "Preview evening forecast" toggles were
+          // development affordances. They're off the shipping build: fake
+          // health data in a health app is exactly what App Review looks for,
+          // and neither means anything to a real user.
           const SizedBox(height: 12),
           Card(
             child: ListTile(

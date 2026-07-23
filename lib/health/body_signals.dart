@@ -24,9 +24,7 @@ extension BodySignalSourceCopy on BodySignalSource {
       this == BodySignalSource.demo;
 
   String? get footnote => switch (this) {
-        BodySignalSource.whoop =>
-          'Steps show in the WHOOP app but aren\'t in its developer API yet, '
-              'so they can\'t sync here — connect Apple Health for step counts.',
+        BodySignalSource.whoop => null,
         BodySignalSource.appleHealth =>
           'Recovery and strain are WHOOP scores — connect WHOOP to add them '
               'alongside these.',

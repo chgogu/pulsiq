@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulsiq/domain/health_models.dart';
+import 'package:pulsiq/features/dashboard/metric_trend_chart.dart';
 import 'package:pulsiq/features/dashboard/whoop_card.dart';
 import 'package:pulsiq/health/body_signals.dart';
 import 'package:pulsiq/health/health_providers.dart';
@@ -51,10 +52,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Apple Health analytics'), findsOneWidget);
-    expect(find.text('HRV'), findsOneWidget);
-    expect(find.text('Resting HR'), findsOneWidget);
-    expect(find.text('Sleep'), findsOneWidget);
-    expect(find.text('Steps'), findsOneWidget);
+    // Each tracked metric appears twice: as a row, and as a chart chip.
+    expect(find.text('HRV'), findsNWidgets(2));
+    expect(find.text('Resting HR'), findsNWidgets(2));
+    expect(find.text('Sleep'), findsNWidgets(2));
+    expect(find.text('Steps'), findsNWidgets(2));
   });
 
   testWidgets('heading names the real window and source', (tester) async {
@@ -82,6 +84,43 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('recovery score'), findsNothing);
+  });
+
+  testWidgets('hides HRV entirely when the source never recorded it',
+      (tester) async {
+    // Apple Health has no HRV unless a watch or strap writes it. A row
+    // reading "—" tells the user nothing except that we asked.
+    final now = DateTime.now();
+    final noHrv = BodySignals(
+      source: BodySignalSource.appleHealth,
+      windowDays: 30,
+      body: bodyFromBiometrics([
+        for (var i = 6; i >= 0; i--)
+          DailyBiometrics(
+            day: now.subtract(Duration(days: i)),
+            restingHr: 60,
+            sleepHours: 7,
+            steps: 8000,
+          ),
+      ]),
+    );
+    await tester.pumpWidget(_host(noHrv));
+    await tester.pumpAndSettle();
+
+    // Absent as a row *and* as a chart chip.
+    expect(find.text('HRV'), findsNothing);
+    expect(find.text('Resting HR'), findsNWidgets(2));
+    expect(find.text('Steps'), findsNWidgets(2));
+  });
+
+  testWidgets('shows a trend chart with a chip per tracked metric',
+      (tester) async {
+    await tester.pumpWidget(_host(_appleHealth()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Trend'), findsOneWidget);
+    expect(find.byType(MetricTrendChart), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsWidgets);
   });
 
   testWidgets('offers WHOOP as the way to add recovery', (tester) async {

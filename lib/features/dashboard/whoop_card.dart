@@ -9,6 +9,7 @@ import '../../health/body_signals.dart';
 import '../../health/health_providers.dart';
 import '../../health/whoop/whoop_client.dart';
 import '../../health/whoop/whoop_providers.dart';
+import 'metric_trend_chart.dart';
 
 /// Recovery band → colour (theme-aware): green / amber / red.
 ({Color ring, Color tint}) _bandColors(RecoveryBand band, Brightness b) {
@@ -131,11 +132,15 @@ class _Shell extends StatelessWidget {
                   Icon(Icons.monitor_heart_outlined,
                       size: 18, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 8),
-                  Text(title,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          letterSpacing: 0.3)),
-                  const Spacer(),
+                  // Titles vary in length now that each source names itself;
+                  // an unconstrained Text here overflowed at phone width.
+                  Expanded(
+                    child: Text(title,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            letterSpacing: 0.3)),
+                  ),
                   if (onRefresh != null)
                     IconButton(
                       tooltip: 'Refresh',
@@ -167,9 +172,11 @@ class _Loading extends StatelessWidget {
           const SizedBox(
               width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
           const SizedBox(width: 14),
-          Text('Reading your recovery and history…',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Expanded(
+            child: Text('Reading your recovery and history…',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ),
         ],
       ),
     );
@@ -211,6 +218,19 @@ class _Note extends StatelessWidget {
   }
 }
 
+/// A metric the connected source actually recorded, with how to read and
+/// format it. Built once and reused for the rows, the chips, and the chart so
+/// the three can't disagree about what's available.
+class _TrackedMetric {
+  const _TrackedMetric(this.label, this.pick,
+      {this.unit = '', this.decimals = 0});
+
+  final String label;
+  final num? Function(WhoopDay) pick;
+  final String unit;
+  final int decimals;
+}
+
 class _Signals extends StatelessWidget {
   const _Signals({required this.signals});
 
@@ -232,42 +252,32 @@ class _Signals extends StatelessWidget {
       return a == null ? '—' : '${a.toStringAsFixed(dp)}$suffix';
     }
 
-    // Recovery and strain are WHOOP scores; steps come only from the phone
-    // platforms. Showing a row the source can't fill would just read "—".
-    final metrics = <Widget>[
-      _Metric(
-        label: 'HRV',
-        value: s.hrvMs,
-        unit: 'ms',
-        avg: avgOf((d) => d.hrvMs),
-      ),
-      _Metric(
-        label: 'Resting HR',
-        value: s.restingHr,
-        unit: 'bpm',
-        avg: avgOf((d) => d.restingHr),
-      ),
-      if (source.hasRecoveryAndStrain)
+    // A row is shown only when the source actually recorded that metric.
+    // Apple Health has no HRV unless a watch or strap writes it, and a row
+    // reading "—" tells the user nothing except that we asked.
+    final tracked = <_TrackedMetric>[
+      if (body.samples((d) => d.hrvMs) > 0)
+        _TrackedMetric('HRV', (d) => d.hrvMs, unit: 'ms'),
+      if (body.samples((d) => d.restingHr) > 0)
+        _TrackedMetric('Resting HR', (d) => d.restingHr, unit: 'bpm'),
+      if (source.hasRecoveryAndStrain && body.samples((d) => d.strain) > 0)
+        _TrackedMetric('Day strain', (d) => d.strain, decimals: 1),
+      if (body.samples((d) => d.sleepHours) > 0)
+        _TrackedMetric('Sleep', (d) => d.sleepHours, unit: 'h', decimals: 1),
+      if (body.samples((d) => d.steps) > 0)
+        _TrackedMetric('Steps', (d) => d.steps),
+      if (body.samples((d) => d.exerciseMinutes) > 0)
+        _TrackedMetric('Active', (d) => d.exerciseMinutes, unit: 'min'),
+    ];
+
+    final metrics = [
+      for (final m in tracked)
         _Metric(
-          label: 'Day strain',
-          value: s.strain,
-          unit: '',
-          decimals: 1,
-          avg: avgOf((d) => d.strain, dp: 1),
-        ),
-      _Metric(
-        label: 'Sleep',
-        value: s.sleepHours,
-        unit: 'h',
-        decimals: 1,
-        avg: avgOf((d) => d.sleepHours, dp: 1),
-      ),
-      if (source.hasSteps && body.samples((d) => d.steps) > 0)
-        _Metric(
-          label: 'Steps',
-          value: s.steps?.toDouble(),
-          unit: '',
-          avg: avgOf((d) => d.steps),
+          label: m.label,
+          value: m.pick(s)?.toDouble(),
+          unit: m.unit,
+          decimals: m.decimals,
+          avg: avgOf(m.pick, dp: m.decimals),
         ),
     ];
 
@@ -341,6 +351,14 @@ class _Signals extends StatelessWidget {
               _AvgChip(label: 'Burn', value: avgOf((d) => d.calories, suffix: ' kcal')),
           ],
         ),
+        if (tracked.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          _TrendSection(
+            body: body,
+            metrics: tracked,
+            windowDays: signals.windowDays,
+          ),
+        ],
         if (source.footnote case final note?) ...[
           const SizedBox(height: 12),
           Text(
@@ -349,23 +367,107 @@ class _Signals extends StatelessWidget {
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
-        const SizedBox(height: 6),
-        Text('${_asOf(s.day)} · ${body.days.length} days of history',
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       ],
     );
   }
 
-  static String _asOf(DateTime day) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final diff = today.difference(day).inDays;
-    if (diff <= 0) return 'As of today';
-    if (diff == 1) return 'As of yesterday';
-    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    if (diff < 7) return 'As of ${names[day.weekday - 1]}';
-    return 'As of $diff days ago';
+}
+
+/// The trend chart plus its metric selector. One series at a time — two
+/// metrics on one plot would need two y-scales, and a dual-axis chart makes
+/// any crossing point look meaningful when it isn't.
+class _TrendSection extends StatefulWidget {
+  const _TrendSection({
+    required this.body,
+    required this.metrics,
+    required this.windowDays,
+  });
+
+  final WhoopBody body;
+  final List<_TrackedMetric> metrics;
+  final int windowDays;
+
+  @override
+  State<_TrendSection> createState() => _TrendSectionState();
+}
+
+class _TrendSectionState extends State<_TrendSection> {
+  int _selected = 0;
+
+  @override
+  void didUpdateWidget(_TrendSection old) {
+    super.didUpdateWidget(old);
+    // A refresh can change which metrics have data; don't hold an index past
+    // the end of the new list.
+    if (_selected >= widget.metrics.length) _selected = 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final metric = widget.metrics[_selected];
+
+    // Every day in the window gets a slot, so gaps in the source's history
+    // render as gaps instead of being silently compressed away.
+    final byDay = {
+      for (final d in widget.body.days)
+        DateTime(d.day.year, d.day.month, d.day.day): d,
+    };
+    final today = DateTime.now();
+    final points = [
+      for (var i = widget.windowDays - 1; i >= 0; i--)
+        () {
+          final day = DateTime(today.year, today.month, today.day)
+              .subtract(Duration(days: i));
+          return MetricTrendPoint(day, byDay[day] == null
+              ? null
+              : metric.pick(byDay[day]!)?.toDouble());
+        }(),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Trend',
+            style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        if (widget.metrics.length > 1)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final (i, m) in widget.metrics.indexed)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(m.label),
+                      selected: i == _selected,
+                      onSelected: (_) => setState(() => _selected = i),
+                      labelStyle: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: i == _selected
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      showCheckmark: false,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 10),
+        MetricTrendChart(
+          key: ValueKey(metric.label),
+          points: points,
+          label: metric.label,
+          unit: metric.unit.isEmpty ? '' : ' ${metric.unit}',
+          decimals: metric.decimals,
+        ),
+      ],
+    );
   }
 }
 
