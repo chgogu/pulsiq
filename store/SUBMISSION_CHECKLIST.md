@@ -59,36 +59,25 @@ decision or an account action that can't be done from the repo.
   App Review notes, or explain that core features (manual/photo logging,
   nutrition) work with no integration connected.
 
-- **YOU — screenshots.** Copy is in `store/STORE_LISTING.md`. These have to be
-  shot on the phone by hand; I could not automate it, and both routes are
-  closed for concrete reasons:
+- **Screenshots — DONE.** Five curated frames in `store/screenshots/`
+  (01–05), all 1290x2796, shot with WHOOP and Apple Health connected: the
+  body-signals hero, the 60-day trend chart, the Apple Health card, the fuel +
+  insights view, and the daily read. Order and captions in
+  `store/SCREENSHOT_PLAN.md`.
 
-  - **Simulator:** `google_mlkit_*` ships no arm64-simulator slices, so a
-    simulator build links x86_64-only, and iOS 26 simulators on Apple Silicon
-    are arm64-only. Verified — `lipo -info` reports `architecture: x86_64` and
-    the install fails with "This app needs to be updated by the developer."
-  - **Device capture:** iOS 17+ moved the screenshot service behind RemoteXPC.
-    `libimobiledevice` can't reach it ("Could not start screenshotr service")
-    even over USB with the device trusted, and `pymobiledevice3` needs a
-    root-owned tunnel.
-
-  So: take them on the phone (side button + volume up) — an iPhone 15 Pro Max
-  screenshot is 1290x2796, exactly what App Store Connect accepts for the 6.9"
-  slot. AirDrop to the Mac, then:
-
-  ```bash
-  ./tools/store/prepare_screenshots.sh ~/Downloads
-  ```
-
-  It checks every image against the sizes App Store Connect accepts, skips
-  anything that would be rejected, and numbers the survivors into
-  `store/screenshots/` in the order they were shot.
-
-  Worth capturing, in this order: dashboard with the score and a logged meal,
-  nutrition detail, snap-a-meal, health analytics with the trend chart,
-  integrations, settings. **Turn your integrations back on first** — the
-  analytics card with real HRV and sleep is the product's whole argument, and
-  an empty state sells nothing.
+- **YOU — create the App Store distribution build.** The archive builds clean
+  (`1.0.0 (1)`), but there's no Apple Distribution certificate yet, and only
+  Xcode's Organizer can create one interactively (the command line reports
+  "No Accounts / No signing certificate"). Steps:
+  1. In App Store Connect, create the app record for bundle id
+     `com.pulsiq.pulsiq` (name, primary language, category: Health & Fitness).
+  2. `open build/ios/archive/Runner.xcarchive` — or re-archive from Xcode
+     (Product → Archive) so it's the newest.
+  3. In Organizer: **Distribute App → App Store Connect → Upload**, automatic
+     signing. Xcode creates the distribution cert + provisioning profile.
+  4. Fill in App Privacy (Health & Fitness + Audio, not used for tracking),
+     attach the screenshots, set the description from `store/STORE_LISTING.md`,
+     add the privacy-policy URL (pulsiqapp.com), and submit for review.
 
 ## Planned, not blocking launch
 
