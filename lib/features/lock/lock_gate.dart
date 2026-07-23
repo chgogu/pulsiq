@@ -72,11 +72,71 @@ class _LockGateState extends ConsumerState<LockGate>
   }
 }
 
-class _LockScreen extends ConsumerWidget {
+/// Face ID fires as soon as this appears — the user opened the app, which is
+/// the request to unlock; making them tap a button first just added a step in
+/// front of the system prompt.
+///
+/// The manual control stays for the retry case: if authentication is
+/// cancelled or fails there has to be a way back in, and silently re-prompting
+/// in a loop is worse than asking.
+class _LockScreen extends ConsumerStatefulWidget {
   const _LockScreen();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LockScreen> createState() => _LockScreenState();
+}
+
+class _LockScreenState extends ConsumerState<_LockScreen> {
+  bool _prompting = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Post-frame: initState runs during build, and unlock() ends up writing
+    // provider state.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
+  }
+
+  Future<void> _authenticate() async {
+    if (!mounted) return;
+    setState(() {
+      _prompting = true;
+      _failed = false;
+    });
+    final ok = await ref.read(appLockProvider.notifier).unlock();
+    if (!mounted) return;
+    // On success the gate unmounts this screen; only the failure path needs
+    // to render anything.
+    setState(() {
+      _prompting = false;
+      _failed = !ok;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _LockScreenBody(
+      prompting: _prompting,
+      failed: _failed,
+      onRetry: _authenticate,
+    );
+  }
+}
+
+class _LockScreenBody extends StatelessWidget {
+  const _LockScreenBody({
+    required this.prompting,
+    required this.failed,
+    required this.onRetry,
+  });
+
+  final bool prompting;
+  final bool failed;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: ColoredBox(
@@ -99,16 +159,34 @@ class _LockScreen extends ConsumerWidget {
                 child: PulseWave(height: 44, color: PulseColors.pulse),
               ),
               const SizedBox(height: 24),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: PulseColors.pulse,
-                  foregroundColor: Colors.white,
+              if (prompting)
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white70),
+                )
+              else ...[
+                if (failed)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Text(
+                      'Face ID didn\'t complete.',
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 14),
+                    ),
+                  ),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PulseColors.pulse,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.fingerprint),
+                  label: Text(failed ? 'Try again' : 'Unlock'),
                 ),
-                onPressed: () =>
-                    ref.read(appLockProvider.notifier).unlock(),
-                icon: const Icon(Icons.fingerprint),
-                label: const Text('Unlock'),
-              ),
+              ],
             ],
           ),
         ),

@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../auth/auth_service.dart';
 import '../../data/data_manager.dart';
+import '../../data/app_version.dart';
 import '../../data/providers.dart';
 import '../../domain/reminder_rules.dart';
 import '../../health/health_providers.dart';
@@ -150,7 +151,10 @@ class SettingsScreen extends ConsumerWidget {
                   Text('About', style: theme.textTheme.labelLarge),
                   const SizedBox(height: 8),
                   Text(
-                    'PulsIQ 0.1.0 — biometric intelligence in real time.\n\n'
+                    // Read from the bundle rather than hardcoded: this said
+                    // 0.1.0 while the app shipped as 1.0.0.
+                    '${ref.watch(appVersionProvider).value ?? 'PulsIQ'} — '
+                    'biometric intelligence in real time.\n\n'
                     'PulsIQ is a wellness companion, not a medical device. '
                     'Nothing in this app is medical advice.',
                     style: theme.textTheme.bodySmall

@@ -1,5 +1,5 @@
 name: pulsiq
-description: "A new Flutter project."
+description: "PulsIQ — your whole health picture, in one place. Snap a meal for calories and macros, and see it against your real-time heart rate, HRV, recovery, and sleep."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -56,6 +56,7 @@ dependencies:
   share_plus: ^12.0.2
   flutter_web_auth_2: ^5.0.0 # WHOOP OAuth: ASWebAuthenticationSession / Custom Tab
   mobile_scanner: ^7.0.0 # on-device barcode scanning for packaged food
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:

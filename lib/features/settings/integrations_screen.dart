@@ -321,8 +321,8 @@ class _WhoopTileState extends ConsumerState<_WhoopTile> {
       ..showSnackBar(SnackBar(
         content: Text(ok
             ? 'WHOOP connected — your pulse now leads the dashboard.'
-            : 'WHOOP sign-in didn\'t complete. Make sure the analysis server '
-                'is running and try again.'),
+            : 'WHOOP sign-in didn\'t complete. Check your connection and '
+                'try again.'),
       ));
   }
 

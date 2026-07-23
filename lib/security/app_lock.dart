@@ -38,10 +38,23 @@ class AppLockController extends Notifier<bool> {
     state = true;
   }
 
+  /// Guards against overlapping prompts: the lock screen fires this on
+  /// appear, and a stray second call while the system sheet is up makes
+  /// local_auth throw rather than queue.
+  bool _authenticating = false;
+  bool get isAuthenticating => _authenticating;
+
   Future<bool> unlock() async {
+    if (_authenticating) return false;
+    _authenticating = true;
     try {
       final ok = await _auth.authenticate(
         localizedReason: 'Unlock PulsIQ',
+        // Survive the app being backgrounded mid-prompt instead of failing.
+        persistAcrossBackgrounding: true,
+        // Allow the device passcode as a fallback — Face ID failing a few
+        // times must not lock someone out of their own health data.
+        biometricOnly: false,
       );
       if (ok) {
         state = false;
@@ -55,6 +68,8 @@ class AppLockController extends Notifier<bool> {
       return ok;
     } catch (_) {
       return false;
+    } finally {
+      _authenticating = false;
     }
   }
 }

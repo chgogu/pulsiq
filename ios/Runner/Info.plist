@@ -1,104 +1,97 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>PulsIQ</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>pulsiq</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.pulsiq.pulsiq</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pulsiq</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>PulsIQ uses the camera to scan menus and hand you the top energy-optimized picks.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>PulsIQ uses Face ID to unlock the app and protect your health data.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PulsIQ reads menu photos from your library to suggest steady-energy picks.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>PulsIQ transcribes your voice notes on-device to build your log.</string>
+	<key>UIApplicationSceneManifest</key>
 	<dict>
-		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true/>
-		<key>CFBundleDevelopmentRegion</key>
-		<string>$(DEVELOPMENT_LANGUAGE)</string>
-		<key>CFBundleDisplayName</key>
-		<string>PulsIQ</string>
-		<key>CFBundleExecutable</key>
-		<string>$(EXECUTABLE_NAME)</string>
-		<key>CFBundleIdentifier</key>
-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-		<key>CFBundleInfoDictionaryVersion</key>
-		<string>6.0</string>
-		<key>CFBundleName</key>
-		<string>pulsiq</string>
-		<key>CFBundlePackageType</key>
-		<string>APPL</string>
-		<key>CFBundleShortVersionString</key>
-		<string>$(FLUTTER_BUILD_NAME)</string>
-		<key>CFBundleSignature</key>
-		<string>????</string>
-		<key>CFBundleURLTypes</key>
-		<array>
-			<dict>
-				<key>CFBundleTypeRole</key>
-				<string>Editor</string>
-				<key>CFBundleURLName</key>
-				<string>com.pulsiq.pulsiq</string>
-				<key>CFBundleURLSchemes</key>
-				<array>
-					<string>pulsiq</string>
-				</array>
-			</dict>
-		</array>
-		<key>CFBundleVersion</key>
-		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<key>LSRequiresIPhoneOS</key>
-		<true/>
-		<key>NSAppTransportSecurity</key>
-		<dict>
-			<key>NSAllowsLocalNetworking</key>
-			<true/>
-		</dict>
-		<key>NSCameraUsageDescription</key>
-		<string>PulsIQ uses the camera to scan menus and hand you the top energy-optimized picks.</string>
-		<key>NSFaceIDUsageDescription</key>
-		<string>PulsIQ uses Face ID to unlock the app and protect your health data.</string>
-		<key>NSHealthShareUsageDescription</key>
-		<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
-		<key>NSLocalNetworkUsageDescription</key>
-		<string>PulsIQ connects to the nutrition analysis server running on your computer to estimate calories and macros from meal photos.</string>
-		<key>NSMicrophoneUsageDescription</key>
-		<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>PulsIQ reads menu photos from your library to suggest steady-energy picks.</string>
-		<key>NSSpeechRecognitionUsageDescription</key>
-		<string>PulsIQ transcribes your voice notes on-device to build your log.</string>
-		<key>UIApplicationSceneManifest</key>
-		<dict>
-			<key>UIApplicationSupportsMultipleScenes</key>
-			<false/>
-			<key>UISceneConfigurations</key>
-			<dict>
-				<key>UIWindowSceneSessionRoleApplication</key>
-				<array>
-					<dict>
-						<key>UISceneClassName</key>
-						<string>UIWindowScene</string>
-						<key>UISceneConfigurationName</key>
-						<string>flutter</string>
-						<key>UISceneDelegateClassName</key>
-						<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-						<key>UISceneStoryboardFile</key>
-						<string>Main</string>
-					</dict>
-				</array>
-			</dict>
-		</dict>
-		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true/>
-		<key>UILaunchStoryboardName</key>
-		<string>LaunchScreen</string>
-		<key>UIMainStoryboardFile</key>
-		<string>Main</string>
-		<key>UIStatusBarHidden</key>
+		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
-		<key>UISupportedInterfaceOrientations</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
 	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIStatusBarHidden</key>
+	<false/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
 </plist>

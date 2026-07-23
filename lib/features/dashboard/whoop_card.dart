@@ -73,8 +73,8 @@ class WhoopCard extends ConsumerWidget {
               onRefresh: () => ref.invalidate(whoopBodyProvider),
               child: const _Note(
                 icon: Icons.cloud_off,
-                text: "Couldn't reach your wearable's data. Check the analysis "
-                    'server is running and you\'re on the same Wi-Fi, then retry.',
+                text: "Couldn't reach your wearable's data. Check your "
+                    'connection, then retry.',
               ),
             ),
         };
