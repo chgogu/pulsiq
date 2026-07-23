@@ -1,0 +1,27 @@
+{
+  // Separate Worker from the marketing site (../../wrangler.jsonc, name
+  // "pulsiq"). Two configs, two names — deploying one must never overwrite
+  // the other.
+  "name": "pulsiq-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-23",
+
+  // The system prompt is shipped as a text module. It's generated from
+  // assets/pulsiq_system_prompt.txt by build_worker.sh so the app and the API
+  // are always instructed identically.
+  "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
+
+  "routes": [{ "pattern": "api.pulsiqapp.com", "custom_domain": true }],
+
+  "observability": { "enabled": true },
+
+  // Secrets (set with `wrangler secret put`, never committed):
+  //   GEMINI_API_KEY      — from ~/.pulsiq_gemini_key
+  //   WHOOP_CLIENT_ID     — from ~/.pulsiq_whoop.env
+  //   WHOOP_CLIENT_SECRET — from ~/.pulsiq_whoop.env
+  //   PULSIQ_APP_TOKEN    — from ~/.pulsiq_app_token, also compiled into the
+  //                         app via --dart-define
+  "vars": {
+    "GEMINI_MODEL": "gemini-3.6-flash"
+  }
+}

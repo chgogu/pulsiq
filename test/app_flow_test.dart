@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulsiq/app.dart';
 import 'package:pulsiq/data/db/app_database.dart';
 import 'package:pulsiq/data/providers.dart';
+import 'package:pulsiq/llm/llm_client.dart';
+import 'package:pulsiq/voice/voice_pipeline.dart';
 import 'package:pulsiq/features/logging/entry_sheet.dart';
 import 'package:pulsiq/voice/stt_service.dart';
 
@@ -21,6 +23,10 @@ Future<AppDatabase> pumpApp(WidgetTester tester) async {
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sttServiceProvider.overrideWithValue(FakeStt('drank 500 ml water')),
+      // The real coach now defaults to the production API; keep widget tests
+      // off the network.
+      llmCoachProvider.overrideWithValue(LlmCoach(
+          primary: const MockLlmBackend(), fallback: const MockLlmBackend())),
     ],
     child: const PulsIQApp(),
   ));

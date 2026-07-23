@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../data/api_config.dart';
 import '../domain/llm_contract.dart';
 
 /// Transport for one model behind the backend proxy. No API keys in the
@@ -52,7 +53,7 @@ class ProxyBackend implements LlmBackend {
     final res = await _client
         .post(
           Uri.parse('$baseUrl/v1/meal-vision'),
-          headers: {'content-type': 'application/json'},
+          headers: apiHeaders(),
           body: jsonEncode({'image': base64Image, 'hint': hint}),
         )
         .timeout(const Duration(seconds: 75));
@@ -66,7 +67,7 @@ class ProxyBackend implements LlmBackend {
     final res = await _client
         .post(
           Uri.parse('$baseUrl$path'),
-          headers: {'content-type': 'application/json'},
+          headers: apiHeaders(),
           body: jsonEncode({'model': model, 'text': text}),
         )
         .timeout(const Duration(seconds: 20));

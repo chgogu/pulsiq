@@ -63,7 +63,13 @@ void main() {
     final c = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sttServiceProvider.overrideWithValue(FakeStt(transcript)),
-      if (coach != null) llmCoachProvider.overrideWithValue(coach),
+      // Always override: the real provider now points at the production API
+      // by default, so without this the pipeline would try to reach the
+      // network from a unit test.
+      llmCoachProvider.overrideWithValue(coach ??
+          LlmCoach(
+              primary: const MockLlmBackend(),
+              fallback: const MockLlmBackend())),
     ]);
     addTearDown(c.dispose);
     return c;

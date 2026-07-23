@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart';
 import '../data/providers.dart';
+import '../data/api_config.dart';
 import '../domain/llm_contract.dart';
 import '../domain/sweetness.dart';
 import '../health/health_providers.dart';
@@ -46,19 +47,13 @@ class VoiceState {
   }
 }
 
-/// Proxy URL is deployment config (no keys in the app). Until it exists,
-/// both chain slots run the deterministic on-device mock so the pipeline
-/// stays fully functional offline.
-const _proxyUrl = String.fromEnvironment('PULSIQ_PROXY_URL');
-
+/// The API is deployment config (no keys in the app) and always has a value
+/// now that [apiBaseUrl] defaults to production. Tests override this provider
+/// with [MockLlmBackend] rather than relying on an unset URL.
 final llmCoachProvider = Provider<LlmCoach>((_) {
-  if (_proxyUrl.isEmpty) {
-    return LlmCoach(
-        primary: const MockLlmBackend(), fallback: const MockLlmBackend());
-  }
   return LlmCoach(
-    primary: ProxyBackend(baseUrl: _proxyUrl, model: 'claude'),
-    fallback: ProxyBackend(baseUrl: _proxyUrl, model: 'gemini-flash'),
+    primary: ProxyBackend(baseUrl: apiBaseUrl, model: 'claude'),
+    fallback: ProxyBackend(baseUrl: apiBaseUrl, model: 'gemini-flash'),
   );
 });
 

@@ -7,11 +7,12 @@ import 'package:http/http.dart' as http;
 import '../../domain/health_models.dart';
 import '../../domain/whoop.dart';
 import '../../security/secret_store.dart';
+import '../../data/api_config.dart';
 import '../health_source.dart';
 
-/// Deployment config (spec §0): the proxy holds the WHOOP client secret and
-/// does the token exchange. Empty until built with --dart-define.
-const _defaultProxyUrl = String.fromEnvironment('PULSIQ_PROXY_URL');
+/// Deployment config (spec §0): the API holds the WHOOP client secret and
+/// does the token exchange. Defaults to production — see [apiBaseUrl].
+const _defaultProxyUrl = apiBaseUrl;
 const _callbackScheme = 'pulsiq';
 
 /// Key for the refresh token in the device keychain. The refresh token is
@@ -76,7 +77,8 @@ class WhoopAuth {
     if (!_configured) return false;
     try {
       final cfgRes =
-          await _http.get(Uri.parse('$_proxyUrl/v1/whoop/config'));
+          await _http.get(Uri.parse('$_proxyUrl/v1/whoop/config'),
+              headers: apiHeaders(json: false));
       if (cfgRes.statusCode != 200) return false;
       final cfg = jsonDecode(cfgRes.body) as Map<String, dynamic>;
 
@@ -99,7 +101,7 @@ class WhoopAuth {
 
       final exRes = await _http.post(
         Uri.parse('$_proxyUrl/v1/whoop/exchange'),
-        headers: {'content-type': 'application/json'},
+        headers: apiHeaders(),
         body: jsonEncode({'code': code, 'redirect_uri': cfg['redirect_uri']}),
       );
       if (exRes.statusCode != 200) return false;
@@ -141,7 +143,7 @@ class WhoopAuth {
     try {
       final res = await _http.post(
         Uri.parse('$_proxyUrl/v1/whoop/refresh'),
-        headers: {'content-type': 'application/json'},
+        headers: apiHeaders(),
         body: jsonEncode({'refresh_token': refresh}),
       );
       if (res.statusCode != 200) return null;
@@ -247,7 +249,7 @@ class WhoopHealthSource implements HealthSource {
     for (var page = 0; page < 40; page++) {
       final res = await _http.post(
         Uri.parse('$_proxyUrl/v1/whoop/fetch'),
-        headers: {'content-type': 'application/json'},
+        headers: apiHeaders(),
         body: jsonEncode({
           'access_token': token,
           'resource': resource,
