@@ -57,29 +57,36 @@ decision or an account action that can't be done from the repo.
   App Review notes, or explain that core features (manual/photo logging,
   nutrition) work with no integration connected.
 
-- **YOU — screenshots.** Copy is in `store/STORE_LISTING.md`; the images are
-  not captured yet, and they need the phone on a **USB cable**.
+- **YOU — screenshots.** Copy is in `store/STORE_LISTING.md`. These have to be
+  shot on the phone by hand; I could not automate it, and both routes are
+  closed for concrete reasons:
 
-  The iOS Simulator can't run this app at all: `google_mlkit_*` ships no
-  arm64-simulator slices, so a simulator build links x86_64-only, and iOS 26
-  simulators on Apple Silicon are arm64-only. Verified — the built
-  `Runner.app` binary is `architecture: x86_64` and the simulator refuses it
-  with "This app needs to be updated by the developer."
+  - **Simulator:** `google_mlkit_*` ships no arm64-simulator slices, so a
+    simulator build links x86_64-only, and iOS 26 simulators on Apple Silicon
+    are arm64-only. Verified — `lipo -info` reports `architecture: x86_64` and
+    the install fails with "This app needs to be updated by the developer."
+  - **Device capture:** iOS 17+ moved the screenshot service behind RemoteXPC.
+    `libimobiledevice` can't reach it ("Could not start screenshotr service")
+    even over USB with the device trusted, and `pymobiledevice3` needs a
+    root-owned tunnel.
 
-  So screenshots come from the device. `libimobiledevice` is installed, but it
-  talks to usbmuxd and cannot see a Wi-Fi-paired phone even though
-  `xcrun devicectl` can. Plug in, unlock, trust, then:
+  So: take them on the phone (side button + volume up) — an iPhone 15 Pro Max
+  screenshot is 1290x2796, exactly what App Store Connect accepts for the 6.9"
+  slot. AirDrop to the Mac, then:
 
   ```bash
-  ./tools/store/capture_screenshots.sh
+  ./tools/store/prepare_screenshots.sh ~/Downloads
   ```
 
-  It walks through the six screens and prints each image's pixel size, since
-  App Store Connect rejects anything that isn't an exact expected size.
+  It checks every image against the sizes App Store Connect accepts, skips
+  anything that would be rejected, and numbers the survivors into
+  `store/screenshots/` in the order they were shot.
 
-- **YOU — App Privacy answers** in App Store Connect must match
-  `PrivacyInfo.xcprivacy`: Health & Fitness and Audio collected, not linked to
-  identity for tracking, not used for tracking.
+  Worth capturing, in this order: dashboard with the score and a logged meal,
+  nutrition detail, snap-a-meal, health analytics with the trend chart,
+  integrations, settings. **Turn your integrations back on first** — the
+  analytics card with real HRV and sleep is the product's whole argument, and
+  an empty state sells nothing.
 
 ## Known limits worth stating in review notes
 
