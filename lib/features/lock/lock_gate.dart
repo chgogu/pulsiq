@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../security/app_lock.dart';
+import '../../services/notification_service.dart';
 import '../../theme/pulse_theme.dart';
 import '../../widgets/pulse_wave.dart';
 
@@ -27,6 +28,11 @@ class _LockGateState extends ConsumerState<LockGate>
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(
         () => ref.read(appLockProvider.notifier).lockIfPossible());
+    // LockGate wraps every route, so its init is the one reliable "app
+    // started" hook. Re-arming the daily reminders here keeps them alive
+    // across reinstalls, reboots, and timezone changes.
+    Future.microtask(
+        () => ref.read(reminderSchedulerProvider).syncDailyReminders());
   }
 
   @override

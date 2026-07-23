@@ -11,7 +11,7 @@
 PulsIQ ("**PulsIQ**", "**we**", "**us**") is a biometric-first wellness
 companion operated by **VeeC Labs**, [ENTITY_ADDRESS]. This policy
 explains what we collect, how we use it, and the rights you have. Questions:
-**privacy@pulsiq.app**.
+**pulsiq.app@gmail.com**.
 
 **PulsIQ is a wellness product, not a medical device.** Nothing in the app is
 medical advice, diagnosis, or treatment.
@@ -146,7 +146,7 @@ From **Settings** in the app you can, at any time:
 Depending on where you live, you also have rights to **access, correct, delete,
 restrict, or port** your data, to **object** to certain processing, and to
 **withdraw consent**. To exercise rights not available in-app, contact
-**privacy@pulsiq.app**; we respond within the time your law requires.
+**pulsiq.app@gmail.com**; we respond within the time your law requires.
 
 - **EU/EEA/UK (GDPR/UK-GDPR):** the rights above, plus the right to lodge a
   complaint with your supervisory authority.
@@ -160,7 +160,7 @@ restrict, or port** your data, to **object** to certain processing, and to
 
 PulsIQ is not directed to children under 13 (or under 16 where required). We do
 not knowingly collect data from them. If you believe a child has provided us
-data, contact **privacy@pulsiq.app** and we will delete it.
+data, contact **pulsiq.app@gmail.com** and we will delete it.
 
 ## 11. Cookies and tracking
 
@@ -176,5 +176,5 @@ here. For material changes we will notify you in-app or by email.
 
 **VeeC Labs**
 [ENTITY_ADDRESS]
-Privacy: **privacy@pulsiq.app**
+Privacy: **pulsiq.app@gmail.com**
 [DATA_PROTECTION_OFFICER_OR_EU_REP, if applicable]

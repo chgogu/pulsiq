@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/providers.dart';
 import '../../theme/pulse_theme.dart';
 import '../../widgets/pulse_wave.dart';
+import '../../widgets/pulsiq_mark.dart';
 
 const onboardedSettingKey = 'onboarded';
 
@@ -56,13 +57,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const PulsIQMark(size: 84),
+              const SizedBox(height: 22),
               const Text(
                 'PulsIQ',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 44,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5,
+                  letterSpacing: -0.9,
                 ),
               ),
               const SizedBox(height: 20),

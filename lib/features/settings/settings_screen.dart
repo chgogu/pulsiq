@@ -9,9 +9,11 @@ import '../../auth/auth_service.dart';
 import '../../data/data_manager.dart';
 import '../../data/forecast_providers.dart';
 import '../../data/providers.dart';
+import '../../domain/reminder_rules.dart';
 import '../../health/health_providers.dart';
 import '../../health/whoop/whoop_providers.dart';
 import '../../security/app_lock.dart';
+import '../../services/notification_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -91,7 +93,17 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const _WhoopCard(),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.hub_outlined),
+              title: const Text('Integrations'),
+              subtitle: Text(_integrationsSummary(ref)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/integrations'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _RemindersCard(),
           const SizedBox(height: 12),
           Card(
             child: SwitchListTile(
@@ -178,62 +190,105 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-/// Connect / disconnect WHOOP. When linked it becomes the biometric source
-/// that lifts the PulsIQ Score out of "fuel-only" — no paid Apple program
-/// needed, since WHOOP is a network API rather than HealthKit.
-class _WhoopCard extends ConsumerStatefulWidget {
-  const _WhoopCard();
-
-  @override
-  ConsumerState<_WhoopCard> createState() => _WhoopCardState();
+/// Names whatever is currently linked, so the row is useful without tapping in.
+String _integrationsSummary(WidgetRef ref) {
+  final connected = <String>[
+    if (ref.watch(whoopConnectedProvider).value ?? false) 'WHOOP',
+    if (ref.watch(platformHealthConnectedProvider).value ?? false)
+      kIsWeb
+          ? 'Health'
+          : defaultTargetPlatform == TargetPlatform.iOS
+              ? 'Apple Health'
+              : 'Health Connect',
+  ];
+  if (connected.isEmpty) {
+    return 'Connect Apple Health, Health Connect, or WHOOP';
+  }
+  return '${connected.join(' · ')} connected';
 }
 
-class _WhoopCardState extends ConsumerState<_WhoopCard> {
-  bool _busy = false;
+/// The two standing daily reminders. Both default ON; toggling either one
+/// rebuilds the whole schedule so we can never stack duplicates.
+class _RemindersCard extends ConsumerStatefulWidget {
+  const _RemindersCard();
+
+  @override
+  ConsumerState<_RemindersCard> createState() => _RemindersCardState();
+}
+
+class _RemindersCardState extends ConsumerState<_RemindersCard> {
+  bool? _water;
+  bool? _activity;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final s = ref.read(reminderSchedulerProvider);
+    final water = await s.waterRemindersEnabled();
+    final activity = await s.activityReminderEnabled();
+    if (!mounted) return;
+    setState(() {
+      _water = water;
+      _activity = activity;
+    });
+  }
+
+  Future<void> _set(String key, bool value) async {
+    await ref
+        .read(appDatabaseProvider)
+        .setSetting(key, value ? 'true' : 'false');
+    await ref.read(reminderSchedulerProvider).syncDailyReminders();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final connected = ref.watch(whoopConnectedProvider).value ?? false;
+    final waterHours = ReminderRules.hourlyWaterHours();
+    final activityHour = ReminderRules.activityHour;
     return Card(
-      child: ListTile(
-        leading: const Icon(Icons.watch_outlined),
-        title: const Text('WHOOP'),
-        subtitle: Text(_busy
-            ? 'Opening WHOOP…'
-            : connected
-                ? 'Connected — HRV, resting HR, recovery, and sleep feed your score'
-                : 'Connect for recovery, HRV, resting HR, and sleep'),
-        trailing: _busy
-            ? const SizedBox(
-                width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-            : TextButton(
-                onPressed: () => connected ? _disconnect() : _connect(),
-                child: Text(connected ? 'Disconnect' : 'Connect'),
-              ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            secondary: const Icon(Icons.water_drop_outlined),
+            title: const Text('Hourly water reminders'),
+            subtitle: Text(
+              'Every hour from ${_clock(waterHours.first)} to '
+              '${_clock(waterHours.last)}, your local time',
+            ),
+            value: _water ?? true,
+            onChanged: _water == null
+                ? null
+                : (v) async {
+                    setState(() => _water = v);
+                    await _set(ReminderScheduler.waterRemindersKey, v);
+                  },
+          ),
+          const Divider(height: 1),
+          SwitchListTile(
+            secondary: const Icon(Icons.directions_walk),
+            title: const Text('Evening move nudge'),
+            subtitle: Text(
+              '${_clock(activityHour)} reminder to walk, stretch, or train',
+            ),
+            value: _activity ?? true,
+            onChanged: _activity == null
+                ? null
+                : (v) async {
+                    setState(() => _activity = v);
+                    await _set(ReminderScheduler.activityReminderKey, v);
+                  },
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _connect() async {
-    setState(() => _busy = true);
-    final ok = await ref.read(whoopConnectorProvider)();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(ok
-            ? 'WHOOP connected — your pulse now leads the dashboard.'
-            : 'WHOOP sign-in didn\'t complete. Make sure the proxy is running '
-                'and try again.'),
-      ));
-  }
-
-  Future<void> _disconnect() async {
-    setState(() => _busy = true);
-    await ref.read(whoopDisconnectProvider)();
-    if (!mounted) return;
-    setState(() => _busy = false);
+  static String _clock(int hour24) {
+    final h = hour24 % 12 == 0 ? 12 : hour24 % 12;
+    return '$h ${hour24 < 12 ? 'am' : 'pm'}';
   }
 }
 

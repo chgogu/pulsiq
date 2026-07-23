@@ -88,6 +88,19 @@ flutter:
     - assets/pulsiq_system_prompt.txt
     - assets/nutrition/foods.json
 
+  # Bricolage Grotesque — the same faces the pulsiqapp.com landing page uses,
+  # extracted from it by tools/branding/extract_fonts.py so web and app can
+  # never drift apart.
+  fonts:
+    - family: Bricolage
+      fonts:
+        - asset: assets/fonts/BricolageGrotesque-500.ttf
+          weight: 500
+        - asset: assets/fonts/BricolageGrotesque-600.ttf
+          weight: 600
+        - asset: assets/fonts/BricolageGrotesque-800.ttf
+          weight: 800
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -36,7 +36,7 @@ You are free to **redesign the logo, the color palette, and the overall visual d
    - Voice logging — hold a button, say what you ate or how you feel, done
 5. **Privacy section** — prominent. Health data is encrypted on your device before it's ever backed up; even we can't read it. No ads, no selling data. Trust badges: "End-to-end encrypted", "No ads, ever", "Delete everything, anytime".
 6. **Final CTA section** — a strong, simple "Download PulsIQ for iOS" repeat of the App Store CTA. No email capture, no waitlist form anywhere on the page.
-7. **Footer** — PulsIQ wordmark, Privacy Policy link (stub page), Contact (mailto: privacy@pulsiq.app), small print "PulsIQ is a wellness companion, not a medical device.", copyright "© 2026 VeeC Labs".
+7. **Footer** — PulsIQ wordmark, Privacy Policy link (stub page), Contact (mailto: pulsiq.app@gmail.com), small print "PulsIQ is a wellness companion, not a medical device.", copyright "© 2026 VeeC Labs".
 
 ## Explicitly remove from the previous version
 

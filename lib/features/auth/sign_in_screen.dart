@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../auth/auth_service.dart';
 import '../../widgets/pulse_wave.dart';
+import '../../widgets/pulsiq_mark.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -42,12 +43,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              Text(
-                'PulsIQ',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.displaySmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
-              ),
+              const Center(child: PulsIQWordmark(fontSize: 36)),
               const SizedBox(height: 8),
               const PulseWave(height: 40),
               const SizedBox(height: 8),

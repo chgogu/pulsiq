@@ -4,38 +4,6 @@
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
-		<key>CFBundleURLTypes</key>
-		<array>
-			<dict>
-				<key>CFBundleTypeRole</key>
-				<string>Editor</string>
-				<key>CFBundleURLName</key>
-				<string>com.pulsiq.pulsiq</string>
-				<key>CFBundleURLSchemes</key>
-				<array>
-					<string>pulsiq</string>
-				</array>
-			</dict>
-		</array>
-		<key>NSHealthShareUsageDescription</key>
-		<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
-		<key>NSCameraUsageDescription</key>
-		<string>PulsIQ uses the camera to scan menus and hand you the top energy-optimized picks.</string>
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>PulsIQ reads menu photos from your library to suggest steady-energy picks.</string>
-		<key>NSLocalNetworkUsageDescription</key>
-	<string>PulsIQ connects to the nutrition analysis server running on your computer to estimate calories and macros from meal photos.</string>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
-	<key>NSMicrophoneUsageDescription</key>
-		<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
-		<key>NSSpeechRecognitionUsageDescription</key>
-		<string>PulsIQ transcribes your voice notes on-device to build your log.</string>
-		<key>NSFaceIDUsageDescription</key>
-		<string>PulsIQ uses Face ID to unlock the app and protect your health data.</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
@@ -54,10 +22,42 @@
 		<string>$(FLUTTER_BUILD_NAME)</string>
 		<key>CFBundleSignature</key>
 		<string>????</string>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>com.pulsiq.pulsiq</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>pulsiq</string>
+				</array>
+			</dict>
+		</array>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsLocalNetworking</key>
+			<true/>
+		</dict>
+		<key>NSCameraUsageDescription</key>
+		<string>PulsIQ uses the camera to scan menus and hand you the top energy-optimized picks.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>PulsIQ uses Face ID to unlock the app and protect your health data.</string>
+		<key>NSHealthShareUsageDescription</key>
+		<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>PulsIQ connects to the nutrition analysis server running on your computer to estimate calories and macros from meal photos.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>PulsIQ reads menu photos from your library to suggest steady-energy picks.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>PulsIQ transcribes your voice notes on-device to build your log.</string>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>
@@ -85,6 +85,8 @@
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
+		<key>UIStatusBarHidden</key>
+		<false/>
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
@@ -98,7 +100,5 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
-		<key>UIStatusBarHidden</key>
-		<false/>
 	</dict>
 </plist>

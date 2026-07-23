@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
 import '../../widgets/pulse_wave.dart';
+import '../../widgets/pulsiq_mark.dart';
 import '../splash/splash_screen.dart' show onboardedSettingKey;
 
 class OnboardingScreen extends ConsumerWidget {
@@ -25,11 +26,7 @@ class OnboardingScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 24),
-                      Text(
-                        'PulsIQ',
-                        style: theme.textTheme.displaySmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
+                      const PulsIQWordmark(fontSize: 34),
                       const SizedBox(height: 4),
                       Text(
                         'Biometric intelligence in real time',

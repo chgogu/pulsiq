@@ -34,4 +34,51 @@ class ReminderRules {
     if (isQuietTime(slot)) return null;
     return slot;
   }
+
+  // ---------------------------------------------------------------------
+  // Standing daily reminders (owner-requested): hourly hydration through the
+  // waking day, and one evening nudge to move. These repeat daily on the
+  // device's own clock, so they fire in the user's local time even when the
+  // app isn't running — and they deliberately sit outside the [maxPerDay]
+  // budget above, which governs the *contextual* nudges.
+  // ---------------------------------------------------------------------
+
+  /// First and last hourly hydration reminder (inclusive), kept inside waking
+  /// hours so nobody is pinged at 3 am.
+  static const waterStartHour = 8;
+  static const waterEndHour = 21;
+
+  /// Evening activity nudge — 6 pm local.
+  static const activityHour = 18;
+
+  /// Every hour of the waking window, quiet hours excluded.
+  static List<int> hourlyWaterHours() => [
+        for (var h = waterStartHour; h <= waterEndHour; h++)
+          if (!isQuietTime(DateTime(2000, 1, 1, h))) h,
+      ];
+
+  /// Rotating hydration copy so 14 daily reminders don't read identically.
+  static String waterMessage(int hour) {
+    const lines = [
+      'Time for a glass of water.',
+      'Hydration check — a few sips now keeps the afternoon steady.',
+      'Water break. Your energy curve will thank you.',
+      'Another glass? Steady hydration beats catching up later.',
+      'Quick sip — dehydration shows up as tiredness long before thirst.',
+      'Top up your water.',
+    ];
+    return lines[hour % lines.length];
+  }
+
+  /// Evening nudge to move — varied so it stays motivating, not nagging.
+  static String activityMessage(int dayOfYear) {
+    const lines = [
+      'Evening moment — a 10-minute walk now pays off in tonight\'s recovery.',
+      'Got 15 minutes? A quick workout or walk steadies your evening energy.',
+      'Time to move. Even a short walk lifts tomorrow\'s recovery score.',
+      'A little movement now — your heart rate and sleep both benefit.',
+      'Wind down by moving first: a brisk walk, a stretch, anything counts.',
+    ];
+    return lines[dayOfYear % lines.length];
+  }
 }

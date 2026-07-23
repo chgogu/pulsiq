@@ -62,7 +62,11 @@ html { color-scheme: light dark; scroll-behavior: smooth; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
   font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  /* `clip`, not `hidden`: overflow-x:hidden would make <body> its own scroll
+     container, which leaves the document scroller at 0 and stops in-page
+     anchors (#privacy, #features…) from ever moving the page. `clip` trims
+     the same horizontal spill without creating a scrollport. */
+  overflow-x: clip;
 }
 /* premium grain overlay */
 body::after {
@@ -85,6 +89,8 @@ button { font-family: inherit; }
 .eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral-ink); }
 
 /* ---------- nav ---------- */
+/* Sticky nav would otherwise sit on top of an anchored heading. */
+section[id], div[id] { scroll-margin-top: 78px; }
 nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: blur(16px) saturate(1.4); border-bottom: 1px solid var(--line); }
 .navrow { display: flex; align-items: center; justify-content: space-between; padding: 15px 30px; max-width: 1180px; margin: 0 auto; }
 .logo { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 1.28rem; font-weight: 800; letter-spacing: -0.02em; }
@@ -448,7 +454,7 @@ footer { border-top: 1px solid var(--line); padding: 50px 0 64px; }
         </svg>
         <span>PulsIQ</span>
       </a>
-      <div class="foot-links"><a href="#">Privacy Policy</a><a href="mailto:privacy@pulsiq.app">Contact</a></div>
+      <div class="foot-links"><a href="#privacy">Privacy Policy</a><a href="mailto:pulsiq.app@gmail.com">Contact</a></div>
     </div>
     <p class="fineprint">PulsIQ is a wellness companion, not a medical device. Nothing in the app is medical advice, diagnosis, or treatment.</p>
     <p class="copyright">© 2026 VeeC Labs</p>

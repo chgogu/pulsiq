@@ -18,7 +18,9 @@ final demoHealthEnabledProvider = FutureProvider<bool>((ref) async {
   return v == 'true';
 });
 
-final _healthConnectedProvider = FutureProvider<bool>((ref) async {
+/// True once the user has granted Apple Health (iOS) / Health Connect
+/// (Android) access. Public so the Integrations screen can show its state.
+final platformHealthConnectedProvider = FutureProvider<bool>((ref) async {
   final v = await ref
       .watch(appDatabaseProvider)
       .getSetting(healthConnectedSettingKey);
@@ -35,7 +37,7 @@ final healthSourceProvider = Provider<HealthSource>((ref) {
   if (ref.watch(whoopConnectedProvider).value ?? false) {
     return WhoopHealthSource(ref.read(whoopAuthProvider));
   }
-  if (ref.watch(_healthConnectedProvider).value ?? false) {
+  if (ref.watch(platformHealthConnectedProvider).value ?? false) {
     return PlatformHealthSource();
   }
   return const EmptyHealthSource();
@@ -55,9 +57,26 @@ final healthConnectorProvider = Provider<Future<bool> Function()>((ref) {
     );
     if (granted) {
       await db.setSetting(healthConnectedSettingKey, 'true');
-      ref.invalidate(_healthConnectedProvider);
+      ref.invalidate(platformHealthConnectedProvider);
     }
     return granted;
+  };
+});
+
+/// Stops PulsIQ reading Apple Health / Health Connect. The OS-level grant is
+/// revoked in the system Health app — this clears our side so the source stops
+/// being used immediately.
+final healthDisconnectProvider = Provider<Future<void> Function()>((ref) {
+  return () async {
+    final db = ref.read(appDatabaseProvider);
+    await db.setSetting(healthConnectedSettingKey, 'false');
+    await db.logAudit(
+      action: 'delete',
+      dataType: 'health_permissions',
+      source: 'health_kit_or_connect',
+      purpose: 'disconnected',
+    );
+    ref.invalidate(platformHealthConnectedProvider);
   };
 });
 
