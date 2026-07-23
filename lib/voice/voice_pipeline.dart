@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/ai_settings.dart';
 import '../data/db/app_database.dart';
+import '../data/foundation_model.dart';
 import '../data/providers.dart';
 import '../data/api_config.dart';
 import '../domain/llm_contract.dart';
@@ -58,8 +59,10 @@ class VoiceState {
 final llmCoachProvider = Provider<LlmCoach>((ref) {
   final aiOn = ref.watch(aiAssistEnabledProvider).value ?? false;
   if (!aiOn) {
+    // Offline: Apple's on-device model does the real parsing on iOS 26+, with
+    // the keyword mock as a last-resort fallback for older devices.
     return LlmCoach(
-      primary: const MockLlmBackend(),
+      primary: OnDeviceCoachBackend(ref.read(foundationModelProvider)),
       fallback: const MockLlmBackend(),
     );
   }

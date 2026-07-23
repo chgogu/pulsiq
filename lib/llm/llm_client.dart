@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../data/api_config.dart';
+import '../data/foundation_model.dart';
 import '../domain/llm_contract.dart';
 
 /// Transport for one model behind the backend proxy. No API keys in the
@@ -78,9 +79,46 @@ class ProxyBackend implements LlmBackend {
   }
 }
 
-/// Deterministic on-device stand-in used until the proxy is deployed (and
-/// in tests). Produces contract-valid JSON from transcript keywords so the
-/// entire pipeline — parse → validate → insert → rings — runs for real.
+/// Apple's on-device model (iOS 26+) as an [LlmBackend]. This is the real
+/// offline brain for voice logs and text meal estimates: it understands any
+/// food, not just a keyword table. Throws when the model is unavailable (older
+/// iOS, unsupported device) so [LlmCoach] falls through to the keyword mock.
+class OnDeviceCoachBackend implements LlmBackend {
+  const OnDeviceCoachBackend([this._fm = const FoundationModel()]);
+
+  final FoundationModel _fm;
+
+  @override
+  String get name => 'apple-on-device';
+
+  @override
+  Future<String> complete(String userText) async {
+    final raw = await _fm.parseVoiceLog(userText);
+    if (raw == null) throw StateError('on-device model unavailable');
+    return raw;
+  }
+
+  @override
+  Future<String> analyzeMealImage({
+    required String base64Image,
+    String hint = '',
+  }) async {
+    // No on-device vision — estimate from the text hint when there is one.
+    if (hint.trim().isEmpty) throw StateError('no on-device vision');
+    final raw = await _fm.estimateMeal(hint);
+    if (raw == null) throw StateError('on-device model unavailable');
+    return raw;
+  }
+
+  @override
+  Future<String> analyzeMenu(String menuText) async =>
+      throw StateError('menu analysis not supported on-device');
+}
+
+/// Deterministic on-device stand-in used as the last-resort offline fallback
+/// (older iOS without Apple's model) and in tests. Produces contract-valid
+/// JSON from transcript keywords so the entire pipeline — parse → validate →
+/// insert → rings — runs for real.
 class MockLlmBackend implements LlmBackend {
   const MockLlmBackend();
 

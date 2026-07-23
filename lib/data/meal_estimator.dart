@@ -92,18 +92,11 @@ class MealEstimator {
       );
     }
 
-    // 1. Local USDA table — $0, offline, ground-truth numbers.
+    // 1. Local USDA table — $0, offline, ground-truth numbers for the foods
+    // it knows exactly.
     try {
       final db = await _foodDb;
-      var local = db.resolve(query);
-
-      // 1b. On-device model (iOS 26+) re-parses messy text the rule splitter
-      // missed, then the table supplies the numbers — still $0, still offline.
-      if (local == null && await _fm.available()) {
-        final reparsed = await _fm.parseToItems(description);
-        if (reparsed != null) local = db.resolve(reparsed);
-      }
-
+      final local = db.resolve(query);
       if (local != null) {
         final est = MealEstimate(
           caloriesKcal: local.caloriesKcal,
@@ -119,34 +112,49 @@ class MealEstimator {
         return est;
       }
     } catch (_) {
-      // asset missing / parse issue → just fall through to the model
+      // asset missing / parse issue → fall through to the on-device model
     }
 
-    // 2. Gemini — the escalation, only for what the table couldn't resolve,
-    // and only when the user has opted into cloud assist. Off by default:
-    // unresolved offline just means "log it manually," never a network call.
+    // 2. Apple's on-device model (iOS 26+) — the real offline brain. It
+    // estimates nutrition for anything the table couldn't (biryani, dosa, a
+    // sentence with filler words), still $0, still private, still offline.
+    if (await _fm.available()) {
+      final raw = await _fm.estimateMeal(description);
+      final est = raw == null ? null : _fromVisionJson(raw);
+      if (est != null) {
+        if (!est.lowConfidence) await _cache(query, est);
+        return est;
+      }
+    }
+
+    // 3. Cloud model — only when the user has opted into it. Off by default:
+    // an unresolved food just means "log it manually," never a silent network
+    // call.
     if (!await _aiEnabled()) return null;
     final raw = await _coach.estimateMealFromText(description);
-    if (raw == null) return null;
-    final MealVisionResult result;
+    final est = raw == null ? null : _fromVisionJson(raw);
+    if (est != null && !est.lowConfidence) await _cache(query, est);
+    return est;
+  }
+
+  /// Parse a MEAL_SCHEMA reply (on-device or cloud) into a summed estimate.
+  MealEstimate? _fromVisionJson(String raw) {
     try {
-      result = parseMealVision(raw);
+      final result = parseMealVision(raw);
+      if (result.items.isEmpty) return null;
+      return MealEstimate(
+        caloriesKcal: result.totalCalories,
+        proteinG: result.totalProtein,
+        fiberG: result.totalFiber,
+        carbsG: result.totalCarbs,
+        fatG: result.totalFat,
+        quality: FuelQuality.values.byName(result.overallQuality),
+        lowConfidence: result.lowConfidence,
+        itemCount: result.items.length,
+      );
     } catch (_) {
       return null;
     }
-    final est = MealEstimate(
-      caloriesKcal: result.totalCalories,
-      proteinG: result.totalProtein,
-      fiberG: result.totalFiber,
-      carbsG: result.totalCarbs,
-      fatG: result.totalFat,
-      quality: FuelQuality.values.byName(result.overallQuality),
-      lowConfidence: result.lowConfidence,
-      itemCount: result.items.length,
-    );
-    // Cache the once-hard meal so it's free next time.
-    if (!est.lowConfidence) await _cache(query, est);
-    return est;
   }
 
   Future<void> _cache(String query, MealEstimate est) => _db.putMealCache(
