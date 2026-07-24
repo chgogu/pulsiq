@@ -106,6 +106,7 @@ class MealCacheRows extends Table {
   RealColumn get fiberG => real()();
   RealColumn get carbsG => real()();
   RealColumn get fatG => real()();
+  RealColumn get sugarG => real().withDefault(const Constant(0))();
   TextColumn get quality => text()();
   IntColumn get hitCount => integer().withDefault(const Constant(1))();
   DateTimeColumn get lastUsed => dateTime()();
@@ -156,9 +157,11 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             await m.createTable(mealCacheRows);
           }
-          // v5: sugar grams on food entries, for daily sugar tracking.
+          // v5: sugar grams on food entries (daily sugar tracking) and on the
+          // meal cache so a replayed estimate keeps its sugar.
           if (from < 5) {
             await m.addColumn(foodEntries, foodEntries.sugarG);
+            await m.addColumn(mealCacheRows, mealCacheRows.sugarG);
           }
         },
       );
@@ -188,6 +191,7 @@ class AppDatabase extends _$AppDatabase {
     required double carbsG,
     required double fatG,
     required String quality,
+    double sugarG = 0,
   }) =>
       into(mealCacheRows).insertOnConflictUpdate(MealCacheRowsCompanion.insert(
         query: query,
@@ -196,6 +200,7 @@ class AppDatabase extends _$AppDatabase {
         fiberG: fiberG,
         carbsG: carbsG,
         fatG: fatG,
+        sugarG: Value(sugarG),
         quality: quality,
         lastUsed: DateTime.now(),
       ));

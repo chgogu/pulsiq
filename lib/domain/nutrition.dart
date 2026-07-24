@@ -72,6 +72,9 @@ class NutritionTargets {
     this.fiberG = 30,
     this.carbsG = 250,
     this.fatG = 67,
+    // WHO free-sugar guideline: ~10% of energy, roughly 50 g/day. A ceiling to
+    // stay under, unlike the others which are targets to reach.
+    this.sugarG = 50,
     this.source = TargetSource.defaults,
   });
 
@@ -80,6 +83,7 @@ class NutritionTargets {
   final double fiberG;
   final double carbsG;
   final double fatG;
+  final double sugarG;
   final TargetSource source;
 
   NutritionTargets copyWith({
@@ -88,6 +92,7 @@ class NutritionTargets {
     double? fiberG,
     double? carbsG,
     double? fatG,
+    double? sugarG,
     TargetSource? source,
   }) =>
       NutritionTargets(
@@ -96,6 +101,7 @@ class NutritionTargets {
         fiberG: fiberG ?? this.fiberG,
         carbsG: carbsG ?? this.carbsG,
         fatG: fatG ?? this.fatG,
+        sugarG: sugarG ?? this.sugarG,
         source: source ?? this.source,
       );
 
@@ -105,6 +111,7 @@ class NutritionTargets {
         'target_fiber_g': '$fiberG',
         'target_carbs_g': '$carbsG',
         'target_fat_g': '$fatG',
+        'target_sugar_g': '$sugarG',
       };
 
   static NutritionTargets fromSettings(String? Function(String) get) {
@@ -115,12 +122,13 @@ class NutritionTargets {
       fiberG: double.tryParse(get('target_fiber_g') ?? '') ?? d.fiberG,
       carbsG: double.tryParse(get('target_carbs_g') ?? '') ?? d.carbsG,
       fatG: double.tryParse(get('target_fat_g') ?? '') ?? d.fatG,
+      sugarG: double.tryParse(get('target_sugar_g') ?? '') ?? d.sugarG,
       source: TargetSource.manual,
     );
   }
 }
 
-enum MacroKind { calories, protein, fiber, carbs, fat }
+enum MacroKind { calories, protein, fiber, carbs, fat, sugar }
 
 class MacroProgress {
   const MacroProgress({

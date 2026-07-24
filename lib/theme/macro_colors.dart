@@ -11,6 +11,8 @@ abstract final class MacroColors {
   static const _carbs = (Color(0xFFEDA100), Color(0xFFC98500)); // yellow
   static const _fat = (Color(0xFFE87BA4), Color(0xFFD55181)); // magenta
   static const _fiber = (Color(0xFF008300), Color(0xFF008300)); // green
+  // Sugar sits under carbs — a warm terracotta, distinct from the carb yellow.
+  static const _sugar = (Color(0xFFCB5A33), Color(0xFFE0764C));
 
   static Color of(MacroKind kind, Brightness brightness) {
     final dark = brightness == Brightness.dark;
@@ -19,6 +21,7 @@ abstract final class MacroColors {
       MacroKind.carbs => _carbs,
       MacroKind.fat => _fat,
       MacroKind.fiber => _fiber,
+      MacroKind.sugar => _sugar,
       MacroKind.calories => _protein, // unused; calories use the brand hue
     };
     return dark ? pair.$2 : pair.$1;
@@ -30,5 +33,6 @@ abstract final class MacroColors {
         MacroKind.fiber => 'Fiber',
         MacroKind.carbs => 'Carbs',
         MacroKind.fat => 'Fat',
+        MacroKind.sugar => 'Sugar',
       };
 }

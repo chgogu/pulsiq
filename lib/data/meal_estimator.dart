@@ -88,6 +88,7 @@ class MealEstimator {
         fiberG: cached.fiberG,
         carbsG: cached.carbsG,
         fatG: cached.fatG,
+        sugarG: cached.sugarG,
         quality: FuelQuality.values.byName(cached.quality),
         lowConfidence: false,
         itemCount: 1,
@@ -106,6 +107,7 @@ class MealEstimator {
           fiberG: local.fiberG,
           carbsG: local.carbsG,
           fatG: local.fatG,
+          sugarG: local.sugarG,
           quality: FuelQuality.values.byName(local.quality),
           lowConfidence: false,
           itemCount: local.itemCount,
@@ -167,6 +169,7 @@ class MealEstimator {
         fiberG: est.fiberG,
         carbsG: est.carbsG,
         fatG: est.fatG,
+        sugarG: est.sugarG,
         quality: est.quality.name,
       );
 

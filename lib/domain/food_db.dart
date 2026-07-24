@@ -22,6 +22,7 @@ class FoodDbEntry {
     required this.units,
     required this.defaultGrams,
     required this.quality,
+    this.sugar100 = 0,
     this.pri = 0,
   });
 
@@ -32,6 +33,9 @@ class FoodDbEntry {
   final double carbs100;
   final double fat100;
   final double fiber100;
+  // Sugar is a subset of carbs; 0 is correct for savoury whole foods, so it
+  // defaults to 0 when the source has no value.
+  final double sugar100;
   final Map<String, double> units; // portion word → grams, for this food
   final double defaultGrams; // one natural unit / serving
   final String quality; // clean | moderate | dense
@@ -52,6 +56,7 @@ class FoodResolution {
     required this.fatG,
     required this.quality,
     required this.itemCount,
+    this.sugarG = 0,
   });
 
   final int caloriesKcal;
@@ -59,6 +64,7 @@ class FoodResolution {
   final double fiberG;
   final double carbsG;
   final double fatG;
+  final double sugarG;
   final String quality;
   final int itemCount;
 }
@@ -133,6 +139,7 @@ class FoodDb {
         carbs100: (per['carbs'] as num).toDouble(),
         fat100: (per['fat'] as num).toDouble(),
         fiber100: (per['fiber'] as num).toDouble(),
+        sugar100: (per['sugar'] as num?)?.toDouble() ?? 0,
         units: {
           for (final e in ((m['units'] as Map<String, dynamic>?) ?? {}).entries)
             e.key: (e.value as num).toDouble(),
@@ -151,6 +158,7 @@ class FoodDb {
     if (chunks.isEmpty) return null;
 
     var kcal = 0.0, protein = 0.0, carbs = 0.0, fat = 0.0, fiber = 0.0;
+    var sugar = 0.0;
     var items = 0;
     const rank = {'clean': 0, 'moderate': 1, 'dense': 2};
     var worst = 'clean';
@@ -165,6 +173,7 @@ class FoodDb {
         carbs += m.entry.carbs100 * g;
         fat += m.entry.fat100 * g;
         fiber += m.entry.fiber100 * g;
+        sugar += m.entry.sugar100 * g;
         items++;
         if ((rank[m.entry.quality] ?? 1) > (rank[worst] ?? 1)) {
           worst = m.entry.quality;
@@ -179,6 +188,7 @@ class FoodDb {
       fiberG: double.parse(fiber.toStringAsFixed(1)),
       carbsG: double.parse(carbs.toStringAsFixed(1)),
       fatG: double.parse(fat.toStringAsFixed(1)),
+      sugarG: double.parse(sugar.toStringAsFixed(1)),
       quality: worst,
       itemCount: items,
     );

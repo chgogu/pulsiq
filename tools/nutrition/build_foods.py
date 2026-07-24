@@ -10,7 +10,9 @@ OUT = sys.argv[3]          # output foods.json
 # nutrient ids
 ENERGY = {"1008", "2047", "2048"}   # kcal (prefer 1008)
 PROTEIN, FAT, CARB, FIBER = "1003", "1004", "1005", "1079"
-MACRO_IDS = ENERGY | {PROTEIN, FAT, CARB, FIBER}
+# Sugars, total: 2000 (newer) with 1063 as the SR-Legacy fallback.
+SUGAR = ("2000", "1063")
+MACRO_IDS = ENERGY | {PROTEIN, FAT, CARB, FIBER} | set(SUGAR)
 
 # measure_unit_id -> resolver measure word (only ones the app understands)
 UNIT_WORD = {"1000": "cup", "1001": "tbsp", "1002": "tsp", "1004": "ml", "1009": "oz"}
@@ -129,6 +131,10 @@ for row in csv_rows(f"{D}/food.csv"):
             "carbs": round(m.get(CARB, 0.0), 1),
             "fat": round(fat, 1),
             "fiber": round(m.get(FIBER, 0.0), 1),
+            # Sugars, total — prefer 2000, fall back to legacy 1063; omit when
+            # the source has neither (0 is correct for savoury foods).
+            **({"sugar": round(m.get(SUGAR[0]) or m.get(SUGAR[1]), 1)}
+               if (m.get(SUGAR[0]) or m.get(SUGAR[1])) else {}),
         },
         "units": units_by.get(fdc, {}),
         "defaultGrams": serving_g.get(fdc, 100),

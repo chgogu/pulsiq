@@ -3257,6 +3257,16 @@ class $MealCacheRowsTable extends MealCacheRows
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sugarGMeta = const VerificationMeta('sugarG');
+  @override
+  late final GeneratedColumn<double> sugarG = GeneratedColumn<double>(
+    'sugar_g',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _qualityMeta = const VerificationMeta(
     'quality',
   );
@@ -3299,6 +3309,7 @@ class $MealCacheRowsTable extends MealCacheRows
     fiberG,
     carbsG,
     fatG,
+    sugarG,
     quality,
     hitCount,
     lastUsed,
@@ -3366,6 +3377,12 @@ class $MealCacheRowsTable extends MealCacheRows
     } else if (isInserting) {
       context.missing(_fatGMeta);
     }
+    if (data.containsKey('sugar_g')) {
+      context.handle(
+        _sugarGMeta,
+        sugarG.isAcceptableOrUnknown(data['sugar_g']!, _sugarGMeta),
+      );
+    }
     if (data.containsKey('quality')) {
       context.handle(
         _qualityMeta,
@@ -3421,6 +3438,10 @@ class $MealCacheRowsTable extends MealCacheRows
         DriftSqlType.double,
         data['${effectivePrefix}fat_g'],
       )!,
+      sugarG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sugar_g'],
+      )!,
       quality: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}quality'],
@@ -3449,6 +3470,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
   final double fiberG;
   final double carbsG;
   final double fatG;
+  final double sugarG;
   final String quality;
   final int hitCount;
   final DateTime lastUsed;
@@ -3459,6 +3481,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
     required this.fiberG,
     required this.carbsG,
     required this.fatG,
+    required this.sugarG,
     required this.quality,
     required this.hitCount,
     required this.lastUsed,
@@ -3472,6 +3495,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
     map['fiber_g'] = Variable<double>(fiberG);
     map['carbs_g'] = Variable<double>(carbsG);
     map['fat_g'] = Variable<double>(fatG);
+    map['sugar_g'] = Variable<double>(sugarG);
     map['quality'] = Variable<String>(quality);
     map['hit_count'] = Variable<int>(hitCount);
     map['last_used'] = Variable<DateTime>(lastUsed);
@@ -3486,6 +3510,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
       fiberG: Value(fiberG),
       carbsG: Value(carbsG),
       fatG: Value(fatG),
+      sugarG: Value(sugarG),
       quality: Value(quality),
       hitCount: Value(hitCount),
       lastUsed: Value(lastUsed),
@@ -3504,6 +3529,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
       fiberG: serializer.fromJson<double>(json['fiberG']),
       carbsG: serializer.fromJson<double>(json['carbsG']),
       fatG: serializer.fromJson<double>(json['fatG']),
+      sugarG: serializer.fromJson<double>(json['sugarG']),
       quality: serializer.fromJson<String>(json['quality']),
       hitCount: serializer.fromJson<int>(json['hitCount']),
       lastUsed: serializer.fromJson<DateTime>(json['lastUsed']),
@@ -3519,6 +3545,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
       'fiberG': serializer.toJson<double>(fiberG),
       'carbsG': serializer.toJson<double>(carbsG),
       'fatG': serializer.toJson<double>(fatG),
+      'sugarG': serializer.toJson<double>(sugarG),
       'quality': serializer.toJson<String>(quality),
       'hitCount': serializer.toJson<int>(hitCount),
       'lastUsed': serializer.toJson<DateTime>(lastUsed),
@@ -3532,6 +3559,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
     double? fiberG,
     double? carbsG,
     double? fatG,
+    double? sugarG,
     String? quality,
     int? hitCount,
     DateTime? lastUsed,
@@ -3542,6 +3570,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
     fiberG: fiberG ?? this.fiberG,
     carbsG: carbsG ?? this.carbsG,
     fatG: fatG ?? this.fatG,
+    sugarG: sugarG ?? this.sugarG,
     quality: quality ?? this.quality,
     hitCount: hitCount ?? this.hitCount,
     lastUsed: lastUsed ?? this.lastUsed,
@@ -3556,6 +3585,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
       fiberG: data.fiberG.present ? data.fiberG.value : this.fiberG,
       carbsG: data.carbsG.present ? data.carbsG.value : this.carbsG,
       fatG: data.fatG.present ? data.fatG.value : this.fatG,
+      sugarG: data.sugarG.present ? data.sugarG.value : this.sugarG,
       quality: data.quality.present ? data.quality.value : this.quality,
       hitCount: data.hitCount.present ? data.hitCount.value : this.hitCount,
       lastUsed: data.lastUsed.present ? data.lastUsed.value : this.lastUsed,
@@ -3571,6 +3601,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
           ..write('fiberG: $fiberG, ')
           ..write('carbsG: $carbsG, ')
           ..write('fatG: $fatG, ')
+          ..write('sugarG: $sugarG, ')
           ..write('quality: $quality, ')
           ..write('hitCount: $hitCount, ')
           ..write('lastUsed: $lastUsed')
@@ -3586,6 +3617,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
     fiberG,
     carbsG,
     fatG,
+    sugarG,
     quality,
     hitCount,
     lastUsed,
@@ -3600,6 +3632,7 @@ class MealCacheRow extends DataClass implements Insertable<MealCacheRow> {
           other.fiberG == this.fiberG &&
           other.carbsG == this.carbsG &&
           other.fatG == this.fatG &&
+          other.sugarG == this.sugarG &&
           other.quality == this.quality &&
           other.hitCount == this.hitCount &&
           other.lastUsed == this.lastUsed);
@@ -3612,6 +3645,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
   final Value<double> fiberG;
   final Value<double> carbsG;
   final Value<double> fatG;
+  final Value<double> sugarG;
   final Value<String> quality;
   final Value<int> hitCount;
   final Value<DateTime> lastUsed;
@@ -3623,6 +3657,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
     this.fiberG = const Value.absent(),
     this.carbsG = const Value.absent(),
     this.fatG = const Value.absent(),
+    this.sugarG = const Value.absent(),
     this.quality = const Value.absent(),
     this.hitCount = const Value.absent(),
     this.lastUsed = const Value.absent(),
@@ -3635,6 +3670,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
     required double fiberG,
     required double carbsG,
     required double fatG,
+    this.sugarG = const Value.absent(),
     required String quality,
     this.hitCount = const Value.absent(),
     required DateTime lastUsed,
@@ -3654,6 +3690,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
     Expression<double>? fiberG,
     Expression<double>? carbsG,
     Expression<double>? fatG,
+    Expression<double>? sugarG,
     Expression<String>? quality,
     Expression<int>? hitCount,
     Expression<DateTime>? lastUsed,
@@ -3666,6 +3703,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
       if (fiberG != null) 'fiber_g': fiberG,
       if (carbsG != null) 'carbs_g': carbsG,
       if (fatG != null) 'fat_g': fatG,
+      if (sugarG != null) 'sugar_g': sugarG,
       if (quality != null) 'quality': quality,
       if (hitCount != null) 'hit_count': hitCount,
       if (lastUsed != null) 'last_used': lastUsed,
@@ -3680,6 +3718,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
     Value<double>? fiberG,
     Value<double>? carbsG,
     Value<double>? fatG,
+    Value<double>? sugarG,
     Value<String>? quality,
     Value<int>? hitCount,
     Value<DateTime>? lastUsed,
@@ -3692,6 +3731,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
       fiberG: fiberG ?? this.fiberG,
       carbsG: carbsG ?? this.carbsG,
       fatG: fatG ?? this.fatG,
+      sugarG: sugarG ?? this.sugarG,
       quality: quality ?? this.quality,
       hitCount: hitCount ?? this.hitCount,
       lastUsed: lastUsed ?? this.lastUsed,
@@ -3720,6 +3760,9 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
     if (fatG.present) {
       map['fat_g'] = Variable<double>(fatG.value);
     }
+    if (sugarG.present) {
+      map['sugar_g'] = Variable<double>(sugarG.value);
+    }
     if (quality.present) {
       map['quality'] = Variable<String>(quality.value);
     }
@@ -3744,6 +3787,7 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
           ..write('fiberG: $fiberG, ')
           ..write('carbsG: $carbsG, ')
           ..write('fatG: $fatG, ')
+          ..write('sugarG: $sugarG, ')
           ..write('quality: $quality, ')
           ..write('hitCount: $hitCount, ')
           ..write('lastUsed: $lastUsed, ')
@@ -5518,6 +5562,7 @@ typedef $$MealCacheRowsTableCreateCompanionBuilder =
       required double fiberG,
       required double carbsG,
       required double fatG,
+      Value<double> sugarG,
       required String quality,
       Value<int> hitCount,
       required DateTime lastUsed,
@@ -5531,6 +5576,7 @@ typedef $$MealCacheRowsTableUpdateCompanionBuilder =
       Value<double> fiberG,
       Value<double> carbsG,
       Value<double> fatG,
+      Value<double> sugarG,
       Value<String> quality,
       Value<int> hitCount,
       Value<DateTime> lastUsed,
@@ -5573,6 +5619,11 @@ class $$MealCacheRowsTableFilterComposer
 
   ColumnFilters<double> get fatG => $composableBuilder(
     column: $table.fatG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sugarG => $composableBuilder(
+    column: $table.sugarG,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5631,6 +5682,11 @@ class $$MealCacheRowsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get sugarG => $composableBuilder(
+    column: $table.sugarG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get quality => $composableBuilder(
     column: $table.quality,
     builder: (column) => ColumnOrderings(column),
@@ -5675,6 +5731,9 @@ class $$MealCacheRowsTableAnnotationComposer
 
   GeneratedColumn<double> get fatG =>
       $composableBuilder(column: $table.fatG, builder: (column) => column);
+
+  GeneratedColumn<double> get sugarG =>
+      $composableBuilder(column: $table.sugarG, builder: (column) => column);
 
   GeneratedColumn<String> get quality =>
       $composableBuilder(column: $table.quality, builder: (column) => column);
@@ -5723,6 +5782,7 @@ class $$MealCacheRowsTableTableManager
                 Value<double> fiberG = const Value.absent(),
                 Value<double> carbsG = const Value.absent(),
                 Value<double> fatG = const Value.absent(),
+                Value<double> sugarG = const Value.absent(),
                 Value<String> quality = const Value.absent(),
                 Value<int> hitCount = const Value.absent(),
                 Value<DateTime> lastUsed = const Value.absent(),
@@ -5734,6 +5794,7 @@ class $$MealCacheRowsTableTableManager
                 fiberG: fiberG,
                 carbsG: carbsG,
                 fatG: fatG,
+                sugarG: sugarG,
                 quality: quality,
                 hitCount: hitCount,
                 lastUsed: lastUsed,
@@ -5747,6 +5808,7 @@ class $$MealCacheRowsTableTableManager
                 required double fiberG,
                 required double carbsG,
                 required double fatG,
+                Value<double> sugarG = const Value.absent(),
                 required String quality,
                 Value<int> hitCount = const Value.absent(),
                 required DateTime lastUsed,
@@ -5758,6 +5820,7 @@ class $$MealCacheRowsTableTableManager
                 fiberG: fiberG,
                 carbsG: carbsG,
                 fatG: fatG,
+                sugarG: sugarG,
                 quality: quality,
                 hitCount: hitCount,
                 lastUsed: lastUsed,
