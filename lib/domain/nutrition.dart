@@ -10,6 +10,7 @@ class MacroTotals {
     required this.fiberG,
     required this.carbsG,
     required this.fatG,
+    this.sugarG = 0,
   });
 
   const MacroTotals.zero()
@@ -17,13 +18,17 @@ class MacroTotals {
         proteinG = 0,
         fiberG = 0,
         carbsG = 0,
-        fatG = 0;
+        fatG = 0,
+        sugarG = 0;
 
   final int calories;
   final double proteinG;
   final double fiberG;
   final double carbsG;
   final double fatG;
+
+  /// Grams of sugar (a subset of carbs), summed for daily sugar tracking.
+  final double sugarG;
 
   bool get isEmpty =>
       calories == 0 && proteinG == 0 && fiberG == 0 && carbsG == 0 && fatG == 0;
@@ -34,6 +39,7 @@ class MacroTotals {
         fiberG: fiberG + other.fiberG,
         carbsG: carbsG + other.carbsG,
         fatG: fatG + other.fatG,
+        sugarG: sugarG + other.sugarG,
       );
 }
 

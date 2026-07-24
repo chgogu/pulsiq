@@ -74,9 +74,19 @@ void main() {
           throwsFormatException);
     });
 
-    test('invalid enum value throws', () {
-      final bad = _validJson.replaceFirst('"steady"', '"turbo"');
-      expect(() => parseCoachReply(bad), throwsFormatException);
+    test('an off-spec enum is coerced, not rejected', () {
+      // The model saying "turbo" for glycemic load must not discard the whole
+      // log — this brittleness silently dropped real voice logs. Coerce to the
+      // nearest bucket and keep the food.
+      final quirky = _validJson
+          .replaceFirst('"steady"', '"turbo"')
+          .replaceFirst('"quality_score": "moderate"', '"quality_score": "junky"');
+      final reply = parseCoachReply(quirky);
+      expect(reply.logSummary.foodItems, isNotEmpty);
+      // "junky" coerces to dense; the food is kept, not dropped.
+      expect(reply.logSummary.foodItems.first.qualityScore, 'dense');
+      // Unknown load falls back to the neutral default rather than throwing.
+      expect(reply.energyImpact.glycemicLoadEstimate, 'steady');
     });
 
     test('empty lists are tolerated', () {

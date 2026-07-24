@@ -71,6 +71,7 @@ class LogRepository {
     double? fiberG,
     double? carbsG,
     double? fatG,
+    double? sugarG,
     String source = 'manual',
     DateTime? at,
   }) async {
@@ -84,6 +85,7 @@ class LogRepository {
               fiberG: Value(fiberG),
               carbsG: Value(carbsG),
               fatG: Value(fatG),
+              sugarG: Value(sugarG),
               source: Value(source),
               loggedAt: at ?? DateTime.now(),
             ));
@@ -102,6 +104,7 @@ class LogRepository {
     required double fiberG,
     required double carbsG,
     required double fatG,
+    double? sugarG,
     FuelQuality? quality,
   }) async {
     await (_db.update(_db.foodEntries)..where((t) => t.id.equals(id))).write(
@@ -111,6 +114,7 @@ class LogRepository {
         fiberG: Value(fiberG),
         carbsG: Value(carbsG),
         fatG: Value(fatG),
+        sugarG: Value(sugarG),
         qualityScore: quality == null ? const Value.absent() : Value(quality),
       ),
     );

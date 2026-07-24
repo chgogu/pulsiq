@@ -110,10 +110,70 @@ class FuelCard extends ConsumerWidget {
                   remaining: targets.calories - totals.calories,
                   personalized: targets.source != TargetSource.defaults,
                 ),
+                const SizedBox(height: 8),
+                _SugarStrip(sugarG: totals.sugarG),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Daily sugar, tracked against the WHO free-sugar guideline (~50 g/day).
+/// Green under half, amber approaching the line, red past it — a nudge, not a
+/// hard budget.
+class _SugarStrip extends StatelessWidget {
+  const _SugarStrip({required this.sugarG});
+
+  final double sugarG;
+
+  /// WHO caps free sugars at ~10% of energy — roughly 50 g on a 2,000 kcal day.
+  static const _guidelineG = 50.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final g = sugarG.round();
+    final over = sugarG > _guidelineG;
+    final high = sugarG > _guidelineG * 0.7;
+    final color = over
+        ? (dark ? const Color(0xFFF87171) : const Color(0xFFDC2626))
+        : high
+            ? (dark ? const Color(0xFFEAB308) : const Color(0xFFCA8A04))
+            : (dark ? const Color(0xFF34D399) : const Color(0xFF059669));
+    final pct = (sugarG / _guidelineG).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: dark ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.icecream_outlined, size: 18, color: color),
+          const SizedBox(width: 10),
+          Text('Sugar', style: theme.textTheme.bodyMedium),
+          const SizedBox(width: 10),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: pct,
+                minHeight: 6,
+                backgroundColor: color.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation(color),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text('$g / ${_guidelineG.round()} g',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, color: color)),
+        ],
       ),
     );
   }

@@ -105,6 +105,15 @@ class $FoodEntriesTable extends FoodEntries
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sugarGMeta = const VerificationMeta('sugarG');
+  @override
+  late final GeneratedColumn<double> sugarG = GeneratedColumn<double>(
+    'sugar_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sourceMeta = const VerificationMeta('source');
   @override
   late final GeneratedColumn<String> source = GeneratedColumn<String>(
@@ -137,6 +146,7 @@ class $FoodEntriesTable extends FoodEntries
     fiberG,
     carbsG,
     fatG,
+    sugarG,
     source,
     loggedAt,
   ];
@@ -202,6 +212,12 @@ class $FoodEntriesTable extends FoodEntries
         fatG.isAcceptableOrUnknown(data['fat_g']!, _fatGMeta),
       );
     }
+    if (data.containsKey('sugar_g')) {
+      context.handle(
+        _sugarGMeta,
+        sugarG.isAcceptableOrUnknown(data['sugar_g']!, _sugarGMeta),
+      );
+    }
     if (data.containsKey('source')) {
       context.handle(
         _sourceMeta,
@@ -263,6 +279,10 @@ class $FoodEntriesTable extends FoodEntries
         DriftSqlType.double,
         data['${effectivePrefix}fat_g'],
       ),
+      sugarG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sugar_g'],
+      ),
       source: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}source'],
@@ -295,6 +315,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
   final double? fiberG;
   final double? carbsG;
   final double? fatG;
+  final double? sugarG;
   final String source;
   final DateTime loggedAt;
   const FoodEntry({
@@ -307,6 +328,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
     this.fiberG,
     this.carbsG,
     this.fatG,
+    this.sugarG,
     required this.source,
     required this.loggedAt,
   });
@@ -336,6 +358,9 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
     if (!nullToAbsent || fatG != null) {
       map['fat_g'] = Variable<double>(fatG);
     }
+    if (!nullToAbsent || sugarG != null) {
+      map['sugar_g'] = Variable<double>(sugarG);
+    }
     map['source'] = Variable<String>(source);
     map['logged_at'] = Variable<DateTime>(loggedAt);
     return map;
@@ -360,6 +385,9 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
           ? const Value.absent()
           : Value(carbsG),
       fatG: fatG == null && nullToAbsent ? const Value.absent() : Value(fatG),
+      sugarG: sugarG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sugarG),
       source: Value(source),
       loggedAt: Value(loggedAt),
     );
@@ -382,6 +410,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
       fiberG: serializer.fromJson<double?>(json['fiberG']),
       carbsG: serializer.fromJson<double?>(json['carbsG']),
       fatG: serializer.fromJson<double?>(json['fatG']),
+      sugarG: serializer.fromJson<double?>(json['sugarG']),
       source: serializer.fromJson<String>(json['source']),
       loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
     );
@@ -401,6 +430,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
       'fiberG': serializer.toJson<double?>(fiberG),
       'carbsG': serializer.toJson<double?>(carbsG),
       'fatG': serializer.toJson<double?>(fatG),
+      'sugarG': serializer.toJson<double?>(sugarG),
       'source': serializer.toJson<String>(source),
       'loggedAt': serializer.toJson<DateTime>(loggedAt),
     };
@@ -416,6 +446,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
     Value<double?> fiberG = const Value.absent(),
     Value<double?> carbsG = const Value.absent(),
     Value<double?> fatG = const Value.absent(),
+    Value<double?> sugarG = const Value.absent(),
     String? source,
     DateTime? loggedAt,
   }) => FoodEntry(
@@ -428,6 +459,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
     fiberG: fiberG.present ? fiberG.value : this.fiberG,
     carbsG: carbsG.present ? carbsG.value : this.carbsG,
     fatG: fatG.present ? fatG.value : this.fatG,
+    sugarG: sugarG.present ? sugarG.value : this.sugarG,
     source: source ?? this.source,
     loggedAt: loggedAt ?? this.loggedAt,
   );
@@ -446,6 +478,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
       fiberG: data.fiberG.present ? data.fiberG.value : this.fiberG,
       carbsG: data.carbsG.present ? data.carbsG.value : this.carbsG,
       fatG: data.fatG.present ? data.fatG.value : this.fatG,
+      sugarG: data.sugarG.present ? data.sugarG.value : this.sugarG,
       source: data.source.present ? data.source.value : this.source,
       loggedAt: data.loggedAt.present ? data.loggedAt.value : this.loggedAt,
     );
@@ -463,6 +496,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
           ..write('fiberG: $fiberG, ')
           ..write('carbsG: $carbsG, ')
           ..write('fatG: $fatG, ')
+          ..write('sugarG: $sugarG, ')
           ..write('source: $source, ')
           ..write('loggedAt: $loggedAt')
           ..write(')'))
@@ -480,6 +514,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
     fiberG,
     carbsG,
     fatG,
+    sugarG,
     source,
     loggedAt,
   );
@@ -496,6 +531,7 @@ class FoodEntry extends DataClass implements Insertable<FoodEntry> {
           other.fiberG == this.fiberG &&
           other.carbsG == this.carbsG &&
           other.fatG == this.fatG &&
+          other.sugarG == this.sugarG &&
           other.source == this.source &&
           other.loggedAt == this.loggedAt);
 }
@@ -510,6 +546,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
   final Value<double?> fiberG;
   final Value<double?> carbsG;
   final Value<double?> fatG;
+  final Value<double?> sugarG;
   final Value<String> source;
   final Value<DateTime> loggedAt;
   const FoodEntriesCompanion({
@@ -522,6 +559,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     this.fiberG = const Value.absent(),
     this.carbsG = const Value.absent(),
     this.fatG = const Value.absent(),
+    this.sugarG = const Value.absent(),
     this.source = const Value.absent(),
     this.loggedAt = const Value.absent(),
   });
@@ -535,6 +573,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     this.fiberG = const Value.absent(),
     this.carbsG = const Value.absent(),
     this.fatG = const Value.absent(),
+    this.sugarG = const Value.absent(),
     this.source = const Value.absent(),
     required DateTime loggedAt,
   }) : name = Value(name),
@@ -550,6 +589,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     Expression<double>? fiberG,
     Expression<double>? carbsG,
     Expression<double>? fatG,
+    Expression<double>? sugarG,
     Expression<String>? source,
     Expression<DateTime>? loggedAt,
   }) {
@@ -563,6 +603,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
       if (fiberG != null) 'fiber_g': fiberG,
       if (carbsG != null) 'carbs_g': carbsG,
       if (fatG != null) 'fat_g': fatG,
+      if (sugarG != null) 'sugar_g': sugarG,
       if (source != null) 'source': source,
       if (loggedAt != null) 'logged_at': loggedAt,
     });
@@ -578,6 +619,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     Value<double?>? fiberG,
     Value<double?>? carbsG,
     Value<double?>? fatG,
+    Value<double?>? sugarG,
     Value<String>? source,
     Value<DateTime>? loggedAt,
   }) {
@@ -591,6 +633,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
       fiberG: fiberG ?? this.fiberG,
       carbsG: carbsG ?? this.carbsG,
       fatG: fatG ?? this.fatG,
+      sugarG: sugarG ?? this.sugarG,
       source: source ?? this.source,
       loggedAt: loggedAt ?? this.loggedAt,
     );
@@ -628,6 +671,9 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
     if (fatG.present) {
       map['fat_g'] = Variable<double>(fatG.value);
     }
+    if (sugarG.present) {
+      map['sugar_g'] = Variable<double>(sugarG.value);
+    }
     if (source.present) {
       map['source'] = Variable<String>(source.value);
     }
@@ -649,6 +695,7 @@ class FoodEntriesCompanion extends UpdateCompanion<FoodEntry> {
           ..write('fiberG: $fiberG, ')
           ..write('carbsG: $carbsG, ')
           ..write('fatG: $fatG, ')
+          ..write('sugarG: $sugarG, ')
           ..write('source: $source, ')
           ..write('loggedAt: $loggedAt')
           ..write(')'))
@@ -3754,6 +3801,7 @@ typedef $$FoodEntriesTableCreateCompanionBuilder =
       Value<double?> fiberG,
       Value<double?> carbsG,
       Value<double?> fatG,
+      Value<double?> sugarG,
       Value<String> source,
       required DateTime loggedAt,
     });
@@ -3768,6 +3816,7 @@ typedef $$FoodEntriesTableUpdateCompanionBuilder =
       Value<double?> fiberG,
       Value<double?> carbsG,
       Value<double?> fatG,
+      Value<double?> sugarG,
       Value<String> source,
       Value<DateTime> loggedAt,
     });
@@ -3824,6 +3873,11 @@ class $$FoodEntriesTableFilterComposer
 
   ColumnFilters<double> get fatG => $composableBuilder(
     column: $table.fatG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sugarG => $composableBuilder(
+    column: $table.sugarG,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3892,6 +3946,11 @@ class $$FoodEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get sugarG => $composableBuilder(
+    column: $table.sugarG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get source => $composableBuilder(
     column: $table.source,
     builder: (column) => ColumnOrderings(column),
@@ -3944,6 +4003,9 @@ class $$FoodEntriesTableAnnotationComposer
   GeneratedColumn<double> get fatG =>
       $composableBuilder(column: $table.fatG, builder: (column) => column);
 
+  GeneratedColumn<double> get sugarG =>
+      $composableBuilder(column: $table.sugarG, builder: (column) => column);
+
   GeneratedColumn<String> get source =>
       $composableBuilder(column: $table.source, builder: (column) => column);
 
@@ -3991,6 +4053,7 @@ class $$FoodEntriesTableTableManager
                 Value<double?> fiberG = const Value.absent(),
                 Value<double?> carbsG = const Value.absent(),
                 Value<double?> fatG = const Value.absent(),
+                Value<double?> sugarG = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 Value<DateTime> loggedAt = const Value.absent(),
               }) => FoodEntriesCompanion(
@@ -4003,6 +4066,7 @@ class $$FoodEntriesTableTableManager
                 fiberG: fiberG,
                 carbsG: carbsG,
                 fatG: fatG,
+                sugarG: sugarG,
                 source: source,
                 loggedAt: loggedAt,
               ),
@@ -4017,6 +4081,7 @@ class $$FoodEntriesTableTableManager
                 Value<double?> fiberG = const Value.absent(),
                 Value<double?> carbsG = const Value.absent(),
                 Value<double?> fatG = const Value.absent(),
+                Value<double?> sugarG = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 required DateTime loggedAt,
               }) => FoodEntriesCompanion.insert(
@@ -4029,6 +4094,7 @@ class $$FoodEntriesTableTableManager
                 fiberG: fiberG,
                 carbsG: carbsG,
                 fatG: fatG,
+                sugarG: sugarG,
                 source: source,
                 loggedAt: loggedAt,
               ),

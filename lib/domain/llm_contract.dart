@@ -15,6 +15,7 @@ class FoodItem {
     this.fiberG,
     this.carbsG,
     this.fatG,
+    this.sugarG,
   });
 
   final String name;
@@ -29,26 +30,39 @@ class FoodItem {
   final double? fiberG;
   final double? carbsG;
   final double? fatG;
+  final double? sugarG;
 
   bool get hasMacros => caloriesKcal != null;
 
-  static const _qualities = {'clean', 'moderate', 'dense'};
-
   factory FoodItem.fromJson(Map<String, dynamic> json) {
-    final quality = json['quality_score'];
-    if (quality is! String || !_qualities.contains(quality)) {
-      throw FormatException('bad quality_score: $quality');
-    }
     return FoodItem(
       name: _string(json, 'name'),
       quantity: json['quantity'] is String ? json['quantity'] as String : '',
-      qualityScore: quality,
+      // A model naming quality "healthy" or "high" must not sink the whole
+      // meal — coerce to the nearest bucket, default moderate.
+      qualityScore: _quality(json['quality_score']),
       caloriesKcal: _optionalNum(json, 'calories')?.round(),
       proteinG: _optionalNum(json, 'protein_g'),
       fiberG: _optionalNum(json, 'fiber_g'),
       carbsG: _optionalNum(json, 'carbs_g'),
       fatG: _optionalNum(json, 'fat_g'),
+      sugarG: _optionalNum(json, 'sugar_g'),
     );
+  }
+
+  static String _quality(Object? v) {
+    final s = v is String ? v.toLowerCase() : '';
+    if (s.contains('clean') || s.contains('healthy') || s.contains('light')) {
+      return 'clean';
+    }
+    if (s.contains('dense') ||
+        s.contains('heavy') ||
+        s.contains('high') ||
+        s.contains('junk') ||
+        s.contains('fried')) {
+      return 'dense';
+    }
+    return 'moderate';
   }
 }
 
@@ -74,18 +88,29 @@ class BeverageItem {
   final double sugarContentG;
   final String type; // water | caffeine | alcohol | protein
 
-  static const _types = {'water', 'caffeine', 'alcohol', 'protein'};
-
   factory BeverageItem.fromJson(Map<String, dynamic> json) {
-    final type = json['type'];
-    if (type is! String || !_types.contains(type)) {
-      throw FormatException('bad beverage type: $type');
-    }
     return BeverageItem(
       name: _string(json, 'name'),
-      sugarContentG: _number(json, 'sugar_content_g'),
-      type: type,
+      sugarContentG: _optionalNum(json, 'sugar_content_g') ?? 0,
+      type: _bevType(json['type'], _string(json, 'name')),
     );
+  }
+
+  /// Coerce to one of the four buckets. Unknown drinks (juice, soda) map to
+  /// `water` volume-wise — harmless for hydration and caffeine reminders —
+  /// while their sugar still counts toward the day.
+  static String _bevType(Object? v, String name) {
+    final s = '${v is String ? v : ''} $name'.toLowerCase();
+    if (RegExp(r'coffee|espresso|latte|tea|cola|soda|energy|matcha|caffeine')
+        .hasMatch(s)) {
+      return 'caffeine';
+    }
+    if (RegExp(r'beer|wine|liquor|cocktail|whiskey|vodka|alcohol')
+        .hasMatch(s)) {
+      return 'alcohol';
+    }
+    if (RegExp(r'protein|whey|shake').hasMatch(s)) return 'protein';
+    return 'water';
   }
 }
 
@@ -100,18 +125,26 @@ class ExerciseItem {
   final int durationMinutes;
   final String intensity; // low | moderate | vigorous
 
-  static const _intensities = {'low', 'moderate', 'vigorous'};
-
   factory ExerciseItem.fromJson(Map<String, dynamic> json) {
-    final intensity = json['intensity'];
-    if (intensity is! String || !_intensities.contains(intensity)) {
-      throw FormatException('bad intensity: $intensity');
-    }
     return ExerciseItem(
       activity: _string(json, 'activity'),
-      durationMinutes: _number(json, 'duration_minutes').round(),
-      intensity: intensity,
+      durationMinutes: (_optionalNum(json, 'duration_minutes') ?? 0).round(),
+      intensity: _intensity(json['intensity']),
     );
+  }
+
+  static String _intensity(Object? v) {
+    final s = v is String ? v.toLowerCase() : '';
+    if (s.contains('low') || s.contains('light') || s.contains('easy')) {
+      return 'low';
+    }
+    if (s.contains('vig') ||
+        s.contains('high') ||
+        s.contains('hard') ||
+        s.contains('intense')) {
+      return 'vigorous';
+    }
+    return 'moderate';
   }
 }
 
@@ -132,7 +165,7 @@ class LogSummary {
     return LogSummary(
       foodItems: _list(json, 'food_items', FoodItem.fromJson),
       beverages: _list(json, 'beverages', BeverageItem.fromJson),
-      hydrationAddedMl: _number(json, 'hydration_added_ml').round(),
+      hydrationAddedMl: (_optionalNum(json, 'hydration_added_ml') ?? 0).round(),
       exerciseLogged: _list(json, 'exercise_logged', ExerciseItem.fromJson),
     );
   }
@@ -149,23 +182,20 @@ class EnergyImpactAnalysis {
   final bool postMealActionRequired;
   final int recommendedWalkMinutes;
 
-  static const _loads = {'flat', 'steady', 'high_spike'};
-
   factory EnergyImpactAnalysis.fromJson(Map<String, dynamic> json) {
-    final load = json['glycemic_load_estimate'];
-    if (load is! String || !_loads.contains(load)) {
-      throw FormatException('bad glycemic_load_estimate: $load');
-    }
-    final action = json['post_meal_action_required'];
-    if (action is! bool) {
-      throw FormatException('bad post_meal_action_required: $action');
-    }
     return EnergyImpactAnalysis(
-      glycemicLoadEstimate: load,
-      postMealActionRequired: action,
+      glycemicLoadEstimate: _load(json['glycemic_load_estimate']),
+      postMealActionRequired: json['post_meal_action_required'] == true,
       recommendedWalkMinutes:
-          _number(json, 'recommended_walk_minutes').round(),
+          (_optionalNum(json, 'recommended_walk_minutes') ?? 0).round(),
     );
+  }
+
+  static String _load(Object? v) {
+    final s = v is String ? v.toLowerCase() : '';
+    if (s.contains('flat')) return 'flat';
+    if (s.contains('spike') || s.contains('high')) return 'high_spike';
+    return 'steady';
   }
 }
 
@@ -182,17 +212,23 @@ class CoachReply {
 
   factory CoachReply.fromJson(Map<String, dynamic> json) {
     final summary = json['log_summary'];
-    final impact = json['energy_impact_analysis'];
     if (summary is! Map<String, dynamic>) {
       throw const FormatException('missing log_summary');
     }
-    if (impact is! Map<String, dynamic>) {
-      throw const FormatException('missing energy_impact_analysis');
-    }
+    final impact = json['energy_impact_analysis'];
     return CoachReply(
       logSummary: LogSummary.fromJson(summary),
-      energyImpact: EnergyImpactAnalysis.fromJson(impact),
-      coachingMessage: _string(json, 'coaching_message'),
+      // The energy analysis is advisory — a missing or malformed block
+      // shouldn't discard a valid food log. Default to a neutral read.
+      energyImpact: impact is Map<String, dynamic>
+          ? EnergyImpactAnalysis.fromJson(impact)
+          : const EnergyImpactAnalysis(
+              glycemicLoadEstimate: 'steady',
+              postMealActionRequired: false,
+              recommendedWalkMinutes: 0,
+            ),
+      coachingMessage:
+          json['coaching_message'] is String ? json['coaching_message'] as String : '',
     );
   }
 
@@ -251,12 +287,6 @@ String _string(Map<String, dynamic> json, String key) {
   final v = json[key];
   if (v is! String) throw FormatException('missing string $key');
   return v;
-}
-
-double _number(Map<String, dynamic> json, String key) {
-  final v = json[key];
-  if (v is! num) throw FormatException('missing number $key');
-  return v.toDouble();
 }
 
 List<T> _list<T>(

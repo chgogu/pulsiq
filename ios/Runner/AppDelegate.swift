@@ -47,6 +47,8 @@ struct GenFoodItem {
   var carbsG: Double
   @Guide(description: "Grams of fat in this portion")
   var fatG: Double
+  @Guide(description: "Grams of sugar in this portion")
+  var sugarG: Double
   @Guide(description: "Exactly one of: clean, moderate, dense")
   var quality: String
 }
@@ -195,7 +197,8 @@ public class FoundationModelPlugin: NSObject, FlutterPlugin {
     return [
       "name": f.name, "portion": f.portion, "quantity": f.portion,
       "calories": f.calories, "protein_g": f.proteinG, "fiber_g": f.fiberG,
-      "carbs_g": f.carbsG, "fat_g": f.fatG, "quality_score": f.quality,
+      "carbs_g": f.carbsG, "fat_g": f.fatG, "sugar_g": f.sugarG,
+      "quality_score": f.quality,
     ]
   }
 

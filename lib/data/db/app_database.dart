@@ -25,6 +25,8 @@ class FoodEntries extends Table {
   RealColumn get fiberG => real().nullable()();
   RealColumn get carbsG => real().nullable()();
   RealColumn get fatG => real().nullable()();
+  // Of which sugar (grams). Powers daily sugar tracking. Schema v5.
+  RealColumn get sugarG => real().nullable()();
   TextColumn get source => text().withDefault(const Constant('manual'))();
   DateTimeColumn get loggedAt => dateTime()();
 }
@@ -131,7 +133,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -153,6 +155,10 @@ class AppDatabase extends _$AppDatabase {
           // v4: personal nutrition cache.
           if (from < 4) {
             await m.createTable(mealCacheRows);
+          }
+          // v5: sugar grams on food entries, for daily sugar tracking.
+          if (from < 5) {
+            await m.addColumn(foodEntries, foodEntries.sugarG);
           }
         },
       );
@@ -273,8 +279,9 @@ class AppDatabase extends _$AppDatabase {
     final fiber = foodEntries.fiberG.sum();
     final carbs = foodEntries.carbsG.sum();
     final fat = foodEntries.fatG.sum();
+    final sugar = foodEntries.sugarG.sum();
     final q = selectOnly(foodEntries)
-      ..addColumns([cal, protein, fiber, carbs, fat])
+      ..addColumns([cal, protein, fiber, carbs, fat, sugar])
       ..where(foodEntries.loggedAt.isBiggerOrEqualValue(start));
     return q.watchSingle().map((row) => MacroTotals(
           calories: (row.read(cal) ?? 0).round(),
@@ -282,6 +289,7 @@ class AppDatabase extends _$AppDatabase {
           fiberG: row.read(fiber) ?? 0,
           carbsG: row.read(carbs) ?? 0,
           fatG: row.read(fat) ?? 0,
+          sugarG: row.read(sugar) ?? 0,
         ));
   }
 

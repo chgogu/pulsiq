@@ -51,6 +51,7 @@ const MEAL_SCHEMA = {
           fiber_g: { type: 'NUMBER' },
           carbs_g: { type: 'NUMBER' },
           fat_g: { type: 'NUMBER' },
+          sugar_g: { type: 'NUMBER' },
           quality_score: {
             type: 'STRING',
             enum: ['clean', 'moderate', 'dense'],
@@ -58,7 +59,7 @@ const MEAL_SCHEMA = {
         },
         required: [
           'name', 'portion', 'calories', 'protein_g',
-          'fiber_g', 'carbs_g', 'fat_g', 'quality_score',
+          'fiber_g', 'carbs_g', 'fat_g', 'sugar_g', 'quality_score',
         ],
       },
     },
@@ -114,10 +115,11 @@ const COACH_SCHEMA = {
               fiber_g: { type: 'NUMBER' },
               carbs_g: { type: 'NUMBER' },
               fat_g: { type: 'NUMBER' },
+              sugar_g: { type: 'NUMBER' },
             },
             required: [
               'name', 'quantity', 'quality_score', 'calories',
-              'protein_g', 'fiber_g', 'carbs_g', 'fat_g',
+              'protein_g', 'fiber_g', 'carbs_g', 'fat_g', 'sugar_g',
             ],
           },
         },

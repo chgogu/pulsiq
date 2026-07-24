@@ -28,6 +28,7 @@ class MealEstimate {
     required this.quality,
     required this.lowConfidence,
     required this.itemCount,
+    this.sugarG = 0,
   });
 
   final int caloriesKcal;
@@ -35,6 +36,7 @@ class MealEstimate {
   final double fiberG;
   final double carbsG;
   final double fatG;
+  final double sugarG;
   final FuelQuality quality;
   final bool lowConfidence;
   final int itemCount;
@@ -148,6 +150,7 @@ class MealEstimator {
         fiberG: result.totalFiber,
         carbsG: result.totalCarbs,
         fatG: result.totalFat,
+        sugarG: result.totalSugar,
         quality: FuelQuality.values.byName(result.overallQuality),
         lowConfidence: result.lowConfidence,
         itemCount: result.items.length,
@@ -181,6 +184,7 @@ class MealEstimator {
       fiberG: est.fiberG,
       carbsG: est.carbsG,
       fatG: est.fatG,
+      sugarG: est.sugarG,
       quality: est.quality,
     );
   }

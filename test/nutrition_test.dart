@@ -29,11 +29,15 @@ void main() {
       expect(r.lowConfidence, isFalse);
     });
 
-    test('rejects negative macros and bad quality', () {
+    test('rejects negative macros but coerces an off-spec quality', () {
+      // A negative macro is a genuine error — reject.
       expect(() => parseMealVision(valid.replaceFirst('280', '-10')),
           throwsFormatException);
-      expect(() => parseMealVision(valid.replaceFirst('"clean"', '"tasty"')),
-          throwsFormatException);
+      // A quality the model made up ("tasty") is coerced to the nearest
+      // bucket, not thrown — one odd word must not sink a real meal estimate.
+      final coerced = parseMealVision(valid.replaceFirst('"clean"', '"tasty"'));
+      expect(coerced.items, isNotEmpty);
+      expect(coerced.items.first.qualityScore, 'moderate');
     });
 
     test('rejects empty item list', () {

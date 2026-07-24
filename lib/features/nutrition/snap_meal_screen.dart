@@ -136,6 +136,7 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
         fiberG: est.fiberG,
         carbsG: est.carbsG,
         fatG: est.fatG,
+        sugarG: est.sugarG,
         qualityScore: est.quality.name,
       );
 
@@ -151,6 +152,7 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
         fiberG: item.fiberG,
         carbsG: item.carbsG,
         fatG: item.fatG,
+        sugarG: item.sugarG,
         source: 'photo',
       );
     }

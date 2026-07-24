@@ -26,6 +26,8 @@ final macroTotalsProvider = Provider<AsyncValue<MacroTotals>>((ref) {
           fiberG: f.fiberG,
           carbsG: f.carbsG + bev.sugarG,
           fatG: f.fatG,
+          // Beverage sugar joins the day's sugar total, on top of food sugar.
+          sugarG: f.sugarG + bev.sugarG,
         ));
 });
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/ai_settings.dart';
 import '../data/db/app_database.dart';
 import '../data/foundation_model.dart';
+import '../data/nutrition_providers.dart';
 import '../data/providers.dart';
 import '../data/api_config.dart';
 import '../domain/llm_contract.dart';
@@ -81,7 +82,7 @@ class VoicePipeline extends Notifier<VoiceState> {
     // If speech recognition can't start (permission denied, or Dictation off),
     // say so plainly instead of listening to nothing and later reporting
     // "didn't catch any words".
-    final started = await ref.read(sttServiceProvider).start((text, _, __) {
+    final started = await ref.read(sttServiceProvider).start((text, _, _) {
       state = state.copyWith(transcript: text);
     });
     if (!started) {
@@ -128,6 +129,9 @@ class VoicePipeline extends Notifier<VoiceState> {
           : "Heard you, but there was nothing to log in that.";
     } else {
       await _applyReply(reply);
+      // Today's fuel is a stream and refreshes itself; the day-history chart
+      // is a future, so nudge it after a voice log lands.
+      ref.invalidate(macroHistoryProvider);
       message = reply.coachingMessage;
       // Sweetness adjuster (spec §5): dilution hack for any sweet drink.
       for (final bev in reply.logSummary.beverages) {
@@ -182,6 +186,7 @@ class VoicePipeline extends Notifier<VoiceState> {
         fiberG: food.fiberG,
         carbsG: food.carbsG,
         fatG: food.fatG,
+        sugarG: food.sugarG,
         source: 'voice',
       );
     }

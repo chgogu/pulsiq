@@ -16,6 +16,7 @@ class MealItem {
     required this.carbsG,
     required this.fatG,
     required this.qualityScore,
+    this.sugarG = 0,
   });
 
   final String name;
@@ -25,15 +26,10 @@ class MealItem {
   final double fiberG;
   final double carbsG;
   final double fatG;
+  final double sugarG;
   final String qualityScore; // clean | moderate | dense
 
-  static const _qualities = {'clean', 'moderate', 'dense'};
-
   factory MealItem.fromJson(Map<String, dynamic> json) {
-    final quality = json['quality_score'];
-    if (quality is! String || !_qualities.contains(quality)) {
-      throw FormatException('bad quality_score: $quality');
-    }
     final name = json['name'];
     if (name is! String || name.trim().isEmpty) {
       throw const FormatException('item missing name');
@@ -46,8 +42,26 @@ class MealItem {
       fiberG: _num(json, 'fiber_g'),
       carbsG: _num(json, 'carbs_g'),
       fatG: _num(json, 'fat_g'),
-      qualityScore: quality,
+      sugarG: _numOr(json, 'sugar_g', 0),
+      // Coerce an off-spec quality to the nearest bucket instead of rejecting
+      // the whole item (LLMs say "healthy"/"high" as often as the exact words).
+      qualityScore: _quality(json['quality_score']),
     );
+  }
+
+  static String _quality(Object? v) {
+    final s = v is String ? v.toLowerCase() : '';
+    if (s.contains('clean') || s.contains('healthy') || s.contains('light')) {
+      return 'clean';
+    }
+    if (s.contains('dense') ||
+        s.contains('heavy') ||
+        s.contains('high') ||
+        s.contains('junk') ||
+        s.contains('fried')) {
+      return 'dense';
+    }
+    return 'moderate';
   }
 
   MealItem copyWith({
@@ -57,6 +71,7 @@ class MealItem {
     double? fiberG,
     double? carbsG,
     double? fatG,
+    double? sugarG,
     String? qualityScore,
   }) =>
       MealItem(
@@ -67,6 +82,7 @@ class MealItem {
         fiberG: fiberG ?? this.fiberG,
         carbsG: carbsG ?? this.carbsG,
         fatG: fatG ?? this.fatG,
+        sugarG: sugarG ?? this.sugarG,
         qualityScore: qualityScore ?? this.qualityScore,
       );
 }
@@ -88,6 +104,7 @@ class MealVisionResult {
   double get totalFiber => items.fold(0.0, (sum, i) => sum + i.fiberG);
   double get totalCarbs => items.fold(0.0, (sum, i) => sum + i.carbsG);
   double get totalFat => items.fold(0.0, (sum, i) => sum + i.fatG);
+  double get totalSugar => items.fold(0.0, (sum, i) => sum + i.sugarG);
 
   /// A single quality label for a multi-item plate: the least-clean item
   /// sets the tone, since one dense component defines how the meal eats.
@@ -125,6 +142,14 @@ double _num(Map<String, dynamic> json, String key) {
   final v = json[key];
   if (v is! num) throw FormatException('missing number $key');
   if (v < 0) throw FormatException('$key is negative');
+  return v.toDouble();
+}
+
+/// Like [_num] but returns [fallback] when the field is missing or invalid —
+/// used for optional additions like sugar_g that older replies won't carry.
+double _numOr(Map<String, dynamic> json, String key, double fallback) {
+  final v = json[key];
+  if (v is! num || v < 0 || v.isNaN || v.isInfinite) return fallback;
   return v.toDouble();
 }
 
