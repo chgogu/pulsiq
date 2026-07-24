@@ -57,10 +57,10 @@ class VoiceState {
 ///
 /// Tests override this provider directly rather than depend on the setting.
 final llmCoachProvider = Provider<LlmCoach>((ref) {
-  final aiOn = ref.watch(aiAssistEnabledProvider).value ?? false;
+  final aiOn = ref.watch(aiAssistEnabledProvider);
   if (!aiOn) {
-    // Offline: Apple's on-device model does the real parsing on iOS 26+, with
-    // the keyword mock as a last-resort fallback for older devices.
+    // Free: Apple's on-device model does the real parsing on iOS 26+, with the
+    // keyword mock as a last-resort fallback for older devices.
     return LlmCoach(
       primary: OnDeviceCoachBackend(ref.read(foundationModelProvider)),
       fallback: const MockLlmBackend(),
@@ -78,9 +78,19 @@ class VoicePipeline extends Notifier<VoiceState> {
 
   Future<void> startListening() async {
     state = state.copyWith(phase: VoicePhase.listening, transcript: '');
-    await ref.read(sttServiceProvider).start((text, confidence, isFinal) {
+    // If speech recognition can't start (permission denied, or Dictation off),
+    // say so plainly instead of listening to nothing and later reporting
+    // "didn't catch any words".
+    final started = await ref.read(sttServiceProvider).start((text, _, __) {
       state = state.copyWith(transcript: text);
     });
+    if (!started) {
+      state = state.copyWith(
+        phase: VoicePhase.idle,
+        coachingMessage: 'Enable Microphone and Speech Recognition for PulsIQ '
+            'in Settings to log by voice.',
+      );
+    }
   }
 
   /// Release-to-submit. Never blocks further logging: the LLM round-trip

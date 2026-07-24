@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../auth/auth_service.dart';
+import '../../billing/subscription_service.dart';
 import '../../data/data_manager.dart';
 import '../../data/app_version.dart';
 import '../../data/providers.dart';
@@ -90,6 +91,23 @@ class SettingsScreen extends ConsumerWidget {
                           .setSetting(appLockSettingKey, v ? 'true' : 'false');
                       ref.invalidate(appLockEnabledProvider);
                     },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
+              title: const Text('PulsIQ Plus'),
+              subtitle: Text(ref.watch(isPlusProvider)
+                  ? 'Active — cloud AI and photo snap-a-meal on'
+                  : 'Sharper meal AI and photo snap-a-meal'),
+              trailing: ref.watch(isPlusProvider)
+                  ? Text('Active',
+                      style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w700))
+                  : const Icon(Icons.chevron_right),
+              onTap: () => context.push('/plus'),
             ),
           ),
           const SizedBox(height: 12),

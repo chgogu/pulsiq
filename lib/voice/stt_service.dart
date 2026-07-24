@@ -11,7 +11,10 @@ abstract interface class SttService {
   static const confidenceFloor = 0.5;
 
   Future<bool> initialize();
-  Future<void> start(SttResultHandler onResult);
+
+  /// Begins listening. Returns false when speech recognition is unavailable
+  /// (permission denied, dictation off) so the caller can prompt the user.
+  Future<bool> start(SttResultHandler onResult);
   Future<void> stop();
 }
 
@@ -31,16 +34,21 @@ class PlatformStt implements SttService {
   }
 
   @override
-  Future<void> start(SttResultHandler onResult) async {
-    if (!await initialize()) return;
-    await _stt.listen(
-      listenOptions: SpeechListenOptions(partialResults: true),
-      onResult: (result) => onResult(
-        result.recognizedWords,
-        result.confidence,
-        result.finalResult,
-      ),
-    );
+  Future<bool> start(SttResultHandler onResult) async {
+    if (!await initialize()) return false;
+    try {
+      await _stt.listen(
+        listenOptions: SpeechListenOptions(partialResults: true),
+        onResult: (result) => onResult(
+          result.recognizedWords,
+          result.confidence,
+          result.finalResult,
+        ),
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

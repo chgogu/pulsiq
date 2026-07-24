@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../billing/subscription_service.dart';
 import '../../security/app_lock.dart';
 import '../../services/notification_service.dart';
 import '../../theme/pulse_theme.dart';
@@ -33,6 +34,10 @@ class _LockGateState extends ConsumerState<LockGate>
     // across reinstalls, reboots, and timezone changes.
     Future.microtask(
         () => ref.read(reminderSchedulerProvider).syncDailyReminders());
+    // Query StoreKit once so the Plus entitlement is known and a returning
+    // subscriber's cloud AI is active from launch.
+    Future.microtask(
+        () => ref.read(subscriptionServiceProvider).init());
   }
 
   @override

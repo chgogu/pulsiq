@@ -201,6 +201,6 @@ final mealEstimatorProvider = Provider<MealEstimator>(
     ref.read(appDatabaseProvider),
     ref.read(foodDbProvider),
     fm: ref.read(foundationModelProvider),
-    aiEnabled: () => aiAssistEnabled(ref),
+    aiEnabled: () async => aiAssistEnabled(ref),
   ),
 );

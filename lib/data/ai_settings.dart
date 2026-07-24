@@ -1,27 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'providers.dart';
+import '../billing/subscription_service.dart';
 
-/// Whether meal analysis may escalate to the cloud model (Gemini) for things
-/// the on-device path can't resolve.
+/// Whether meal analysis may use the cloud model (Gemini) for things the
+/// on-device path can't resolve well.
 ///
-/// Default **off**: nutrition is a lookup, not a reasoning problem. Identifying
-/// a food and summing its intake is what the bundled USDA table and the
-/// on-device parser already do — at $0, offline, with no hallucinated numbers.
-/// Gemini is a convenience for messy multi-item plates, not a dependency, so
-/// it stays opt-in. Off also means no metered API quota to exhaust and nothing
-/// leaves the device for a meal log.
-const aiAssistSettingKey = 'ai_assist_enabled';
-
-final aiAssistEnabledProvider = FutureProvider<bool>((ref) async {
-  final v = await ref.watch(appDatabaseProvider).getSetting(aiAssistSettingKey);
-  return v == 'true'; // absent → false → offline only
+/// This is now the **PulsIQ Plus** entitlement. Free users get the on-device
+/// model (Apple Intelligence, iOS 26+) and the bundled food table — fully
+/// functional, $0, private. Plus ($2/mo) adds cloud Gemini for sharper
+/// estimates and photo snap-a-meal, whose small per-call cost the subscription
+/// funds. The cloud path is otherwise identical, so nothing downstream changes.
+final aiAssistEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(isPlusProvider);
 });
 
-/// Synchronous gate for code paths that can't await a provider (the meal
-/// estimator reads it before deciding whether to make a network call). Reads
-/// the same setting directly.
-Future<bool> aiAssistEnabled(Ref ref) async {
-  final v = await ref.read(appDatabaseProvider).getSetting(aiAssistSettingKey);
-  return v == 'true';
-}
+/// Synchronous gate for code paths that can't watch a provider (the meal
+/// estimator reads it before deciding whether to make a network call).
+bool aiAssistEnabled(Ref ref) => ref.read(isPlusProvider);

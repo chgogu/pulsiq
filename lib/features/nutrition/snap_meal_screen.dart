@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/ai_settings.dart';
@@ -81,10 +82,10 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
 
     // Offline-first. The on-device labeler already had its turn in _pick; here
     // we either look the hint up in the local food table (still on-device,
-    // still $0) or, only if the user has connected their own AI, escalate to
-    // it. With no AI connected and no hint, there's nothing left to try but
-    // manual entry — say so honestly rather than blaming the photo.
-    final aiOn = await ref.read(aiAssistEnabledProvider.future);
+    // still $0) or, on Plus, send the photo to the cloud model. Free + no
+    // hint: nothing left but manual entry — say so honestly, don't blame the
+    // photo.
+    final aiOn = ref.read(aiAssistEnabledProvider);
     if (!aiOn) {
       final hint = _hint.text.trim();
       if (hint.isEmpty) {
@@ -159,9 +160,9 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Re-analyze escalates to the cloud model, so it only makes sense when the
-    // user has connected their own AI. Offline, the on-device match is final.
-    final aiOn = ref.watch(aiAssistEnabledProvider).value ?? false;
+    // Re-analyze escalates to the cloud model, so it only makes sense on Plus.
+    // Free: the on-device match is final.
+    final aiOn = ref.watch(aiAssistEnabledProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -182,9 +183,13 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
             onRemove: (i) => setState(() => _items.removeAt(i)),
             onConfirm: _items.isEmpty ? null : _confirm,
           ),
-        _Phase.error => _ErrorView(onRetry: () {
-            setState(() => _phase = _Phase.intro);
-          }),
+        _Phase.error => _ErrorView(
+            onRetry: () => setState(() => _phase = _Phase.intro),
+            // Reading a photo is the Plus feature; free users get the offer
+            // instead of a dead end.
+            onGetPlus:
+                aiOn ? null : () => context.push('/plus'),
+          ),
         _Phase.intro => _Intro(
             hint: _hint,
             onCamera: () => _pick(ImageSource.camera),
@@ -503,9 +508,12 @@ class _Busy extends StatelessWidget {
 }
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.onRetry});
+  const _ErrorView({required this.onRetry, this.onGetPlus});
 
   final VoidCallback onRetry;
+
+  /// Set for free users: reading a photo automatically is the Plus feature.
+  final VoidCallback? onGetPlus;
 
   @override
   Widget build(BuildContext context) {
@@ -523,14 +531,25 @@ class _ErrorView extends StatelessWidget {
                 style: theme.textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(
-              'Type what it is in the hint box and we\'ll look it up in your '
-              'food library — no internet needed.',
+              onGetPlus == null
+                  ? 'Try a clearer photo, or type what it is in the hint box.'
+                  : 'Type what it is in the hint box and we\'ll look it up in '
+                      'your food library — or let Plus read the photo for you.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+            if (onGetPlus != null) ...[
+              FilledButton.icon(
+                onPressed: onGetPlus,
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                label: const Text('Read photos with Plus'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(onPressed: onRetry, child: const Text('Not now')),
+            ] else
+              FilledButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),

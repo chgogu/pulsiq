@@ -17,9 +17,10 @@ class FakeStt implements SttService {
   Future<bool> initialize() async => true;
 
   @override
-  Future<void> start(SttResultHandler onResult) async {
+  Future<bool> start(SttResultHandler onResult) async {
     _handler = onResult;
     onResult(transcript, 0.92, false);
+    return true;
   }
 
   @override

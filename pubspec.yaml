@@ -57,6 +57,7 @@ dependencies:
   flutter_web_auth_2: ^5.0.0 # WHOOP OAuth: ASWebAuthenticationSession / Custom Tab
   mobile_scanner: ^7.0.0 # on-device barcode scanning for packaged food
   package_info_plus: ^9.0.1
+  in_app_purchase: ^3.3.0
 
 dev_dependencies:
   flutter_test:

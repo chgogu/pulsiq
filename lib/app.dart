@@ -10,6 +10,7 @@ import 'features/nutrition/scan_barcode_screen.dart';
 import 'features/nutrition/snap_meal_screen.dart';
 import 'features/order_hack/order_hack_screen.dart';
 import 'features/profile/body_profile_screen.dart';
+import 'features/billing/paywall_screen.dart';
 import 'features/settings/integrations_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/shell/pulsiq_shell.dart';
@@ -29,6 +30,7 @@ GoRouter buildRouter() => GoRouter(
           builder: (_, _, child) => PulsIQShell(child: child),
           routes: [
             GoRoute(path: '/home', builder: (_, _) => const DashboardScreen()),
+            GoRoute(path: '/plus', builder: (_, _) => const PaywallScreen()),
             GoRoute(
               path: '/order-hack',
               builder: (_, _) => const OrderHackScreen(),
