@@ -1,0 +1,60 @@
+{
+  "identifier" : "3bd633ea-d984-4222-9ae8-45b73eb6d5a7",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6740000000",
+    "_developerTeamID" : "6GFC9MMTS7",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "77e9a649-c033-46ab-b69b-c20e7afb25e6",
+      "localizations" : [
+
+      ],
+      "name" : "PulsIQ Plus",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "c71be94f-4aee-4fbb-bb16-a85fb163c8b7",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Sharper meal AI and photo snap-a-meal.",
+              "displayName" : "PulsIQ Plus",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.pulsiq.pulsiq.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "PulsIQ Plus Monthly",
+          "subscriptionGroupID" : "77e9a649-c033-46ab-b69b-c20e7afb25e6",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
