@@ -134,7 +134,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -157,10 +157,15 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             await m.createTable(mealCacheRows);
           }
-          // v5: sugar grams on food entries (daily sugar tracking) and on the
-          // meal cache so a replayed estimate keeps its sugar.
+          // v5: sugar grams on food entries, for daily sugar tracking.
           if (from < 5) {
             await m.addColumn(foodEntries, foodEntries.sugarG);
+          }
+          // v6: sugar on the meal cache too, so a replayed estimate keeps it.
+          // Split from v5 on purpose: a build already shipped v5 with only the
+          // food-entries column, so devices sitting at v5 must still get this
+          // one — adding it to the v5 block would silently skip them.
+          if (from < 6) {
             await m.addColumn(mealCacheRows, mealCacheRows.sugarG);
           }
         },
