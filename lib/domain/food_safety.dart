@@ -25,20 +25,35 @@ class SafetyReason {
 }
 
 class SafetyVerdict {
-  const SafetyVerdict(this.level, this.reasons);
+  const SafetyVerdict(this.level, this.reasons, {this.hasGoals = false});
 
   /// The worst level across all goals — one "avoid" makes the whole verdict
   /// "avoid".
   final SafetyLevel level;
   final List<SafetyReason> reasons;
 
-  bool get hasOpinion => reasons.isNotEmpty;
+  /// Whether the user has any goals set. Without them there's no basis for an
+  /// answer, so the banner stays hidden.
+  final bool hasGoals;
 
-  String get headline => switch (level) {
-        SafetyLevel.good => 'Good for your goals',
-        SafetyLevel.caution => 'Okay — one thing to watch',
-        SafetyLevel.avoid => 'Better to skip this one',
-      };
+  /// A straight Yes/No, so the user doesn't have to interpret a scale. Only a
+  /// clear conflict (level "avoid") is a No; a mild caution is still Yes.
+  bool get canEat => level != SafetyLevel.avoid;
+
+  bool get hasAnswer => hasGoals;
+
+  String get answer => canEat ? 'Yes' : 'No';
+
+  /// One neutral line — the single most relevant fact, never a lecture.
+  String get oneLiner {
+    // Surface the most severe reason; ties keep declaration order.
+    SafetyReason? top;
+    for (final r in reasons) {
+      if (top == null || r.level.index > top.level.index) top = r;
+    }
+    if (top != null) return top.text;
+    return 'No conflicts with your goals.';
+  }
 }
 
 /// What the engine needs to judge a food. Everything past the first three is
@@ -83,61 +98,52 @@ SafetyVerdict assessFood(FoodSafetyInput food, Set<HealthGoal> goals) {
   void add(HealthGoal g, SafetyLevel l, String t) =>
       reasons.add(SafetyReason(g, l, t));
 
+  // One neutral fact per rule — the reason, no judgement.
   for (final goal in goals) {
     switch (goal) {
       case HealthGoal.diabetes:
         if (food.sugarG >= 25) {
           add(goal, SafetyLevel.avoid,
-              '${food.sugarG.round()} g sugar — a big spike for blood glucose.');
+              '${food.sugarG.round()} g sugar — high for blood sugar.');
         } else if (food.sugarG >= 12) {
           add(goal, SafetyLevel.caution,
-              '${food.sugarG.round()} g sugar — pair it with protein or fiber '
-              'to soften the spike.');
+              '${food.sugarG.round()} g sugar — moderate; pair with protein.');
         }
 
       case HealthGoal.weightLoss:
         if (food.caloriesKcal >= 600) {
           add(goal, SafetyLevel.caution,
-              '${food.caloriesKcal} kcal in one item — heavy for a cut. A '
-              'smaller portion keeps you on budget.');
-        }
-        if (food.sugarG >= 20) {
+              '${food.caloriesKcal} kcal — high for a calorie deficit.');
+        } else if (food.sugarG >= 20) {
           add(goal, SafetyLevel.caution,
-              'High in sugar, which is easy to over-eat.');
+              '${food.sugarG.round()} g sugar — calorie-dense.');
         }
 
       case HealthGoal.weightGain:
         if (food.caloriesKcal >= 400) {
           add(goal, SafetyLevel.good,
-              'Calorie-dense — helps you hit a surplus.');
+              '${food.caloriesKcal} kcal — supports a surplus.');
         }
 
       case HealthGoal.pregnancy:
         if (food._mentions(_alcohol)) {
-          add(goal, SafetyLevel.avoid,
-              'Contains alcohol — best avoided entirely in pregnancy.');
-        }
-        if (food._mentions(_rawUnsafe)) {
-          add(goal, SafetyLevel.avoid,
-              'Looks raw or unpasteurized — a listeria risk in pregnancy.');
-        }
-        if (food._mentions(_highMercuryFish)) {
-          add(goal, SafetyLevel.avoid,
-              'High-mercury fish — one to skip while pregnant.');
-        }
-        if (food._mentions(_caffeine)) {
-          add(goal, SafetyLevel.caution,
-              'Caffeine — keep under about 200 mg/day in pregnancy.');
+          add(goal, SafetyLevel.avoid, 'Contains alcohol.');
+        } else if (food._mentions(_rawUnsafe)) {
+          add(goal, SafetyLevel.avoid, 'Raw or unpasteurized.');
+        } else if (food._mentions(_highMercuryFish)) {
+          add(goal, SafetyLevel.avoid, 'High-mercury fish.');
+        } else if (food._mentions(_caffeine)) {
+          add(goal, SafetyLevel.caution, 'Contains caffeine — limit to 200 mg/day.');
         }
 
       case HealthGoal.heartHealth:
         final sat = food.saturatedFatG;
         if (sat != null && sat >= 10) {
           add(goal, SafetyLevel.avoid,
-              '${sat.round()} g saturated fat — hard on cholesterol.');
+              '${sat.round()} g saturated fat — high.');
         } else if (sat != null && sat >= 5) {
           add(goal, SafetyLevel.caution,
-              '${sat.round()} g saturated fat — enjoy in moderation.');
+              '${sat.round()} g saturated fat — moderate.');
         }
         _sodium(food, goal, add, cautionMg: 600, avoidMg: 1200);
 
@@ -150,7 +156,11 @@ SafetyVerdict assessFood(FoodSafetyInput food, Set<HealthGoal> goals) {
     // good < caution < avoid
     return r.level.index > worst.index ? r.level : worst;
   });
-  return SafetyVerdict(reasons.isEmpty ? SafetyLevel.good : level, reasons);
+  return SafetyVerdict(
+    reasons.isEmpty ? SafetyLevel.good : level,
+    reasons,
+    hasGoals: goals.isNotEmpty,
+  );
 }
 
 void _sodium(
@@ -163,8 +173,8 @@ void _sodium(
   final s = food.sodiumMg;
   if (s == null) return;
   if (s >= avoidMg) {
-    add(goal, SafetyLevel.avoid, '${s.round()} mg sodium — very salty.');
+    add(goal, SafetyLevel.avoid, '${s.round()} mg sodium — high.');
   } else if (s >= cautionMg) {
-    add(goal, SafetyLevel.caution, '${s.round()} mg sodium — on the salty side.');
+    add(goal, SafetyLevel.caution, '${s.round()} mg sodium — moderate.');
   }
 }

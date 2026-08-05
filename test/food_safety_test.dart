@@ -20,25 +20,28 @@ FoodSafetyInput food({
     );
 
 void main() {
-  test('no goals set → no opinion', () {
+  test('no goals set → no answer to show', () {
     final v = assessFood(food(sugar: 40), {});
-    expect(v.hasOpinion, isFalse);
-    expect(v.level, SafetyLevel.good);
+    expect(v.hasAnswer, isFalse);
   });
 
   group('diabetes', () {
-    test('high sugar is flagged avoid', () {
+    test('high sugar → No, with a one-line reason', () {
       final v = assessFood(food(sugar: 30), {HealthGoal.diabetes});
-      expect(v.level, SafetyLevel.avoid);
-      expect(v.reasons.single.goal, HealthGoal.diabetes);
+      expect(v.canEat, isFalse);
+      expect(v.answer, 'No');
+      expect(v.oneLiner, contains('sugar'));
     });
-    test('moderate sugar is a caution', () {
+    test('moderate sugar is still Yes, with a caveat', () {
       final v = assessFood(food(sugar: 15), {HealthGoal.diabetes});
-      expect(v.level, SafetyLevel.caution);
+      expect(v.canEat, isTrue);
+      expect(v.answer, 'Yes');
     });
-    test('low sugar passes', () {
+    test('low sugar → Yes, no conflicts', () {
       final v = assessFood(food(sugar: 4), {HealthGoal.diabetes});
-      expect(v.hasOpinion, isFalse);
+      expect(v.hasAnswer, isTrue);
+      expect(v.canEat, isTrue);
+      expect(v.oneLiner, contains('No conflicts'));
     });
   });
 
@@ -53,36 +56,37 @@ void main() {
           {HealthGoal.pregnancy});
       expect(v.level, SafetyLevel.avoid);
     });
-    test('coffee is a caution, not a block', () {
+    test('coffee is Yes with a caffeine caveat, not a block', () {
       final v = assessFood(food(name: 'Iced coffee'), {HealthGoal.pregnancy});
-      expect(v.level, SafetyLevel.caution);
+      expect(v.canEat, isTrue);
+      expect(v.oneLiner.toLowerCase(), contains('caffeine'));
     });
   });
 
   group('heart health', () {
-    test('high saturated fat is avoid', () {
+    test('high saturated fat → No', () {
       final v = assessFood(food(satFat: 12), {HealthGoal.heartHealth});
-      expect(v.level, SafetyLevel.avoid);
+      expect(v.answer, 'No');
     });
-    test('high sodium is flagged', () {
-      final v = assessFood(food(sodium: 1300), {HealthGoal.heartHealth});
-      expect(v.level, SafetyLevel.avoid);
+    test('high sodium → No even when saturated fat is fine', () {
+      final v = assessFood(food(satFat: 2, sodium: 1300), {HealthGoal.heartHealth});
+      expect(v.answer, 'No');
     });
   });
 
-  test('weight gain frames a dense food positively', () {
+  test('weight gain → Yes for a calorie-dense food', () {
     final v = assessFood(food(kcal: 600), {HealthGoal.weightGain});
-    expect(v.level, SafetyLevel.good);
-    expect(v.reasons, isNotEmpty);
+    expect(v.answer, 'Yes');
+    expect(v.oneLiner, contains('kcal'));
   });
 
-  test('the worst goal sets the overall level', () {
+  test('one conflicting goal makes the answer No', () {
     final v = assessFood(
       food(name: 'wine cake', sugar: 30),
       {HealthGoal.diabetes, HealthGoal.weightGain},
     );
-    // diabetes says avoid, weight-gain says good → avoid wins.
-    expect(v.level, SafetyLevel.avoid);
+    // diabetes conflicts (high sugar) even though weight-gain is happy → No.
+    expect(v.answer, 'No');
   });
 
   test('serializes and restores goals through settings', () {
