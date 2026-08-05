@@ -9,12 +9,15 @@ import 'package:image_picker/image_picker.dart';
 import '../../data/ai_settings.dart';
 import '../../data/db/app_database.dart';
 import '../../data/food_image_classifier.dart';
+import '../../data/health_profile_providers.dart';
+import '../../domain/food_safety.dart';
 import '../../data/meal_estimator.dart'
     show foodDbProvider, mealEstimatorProvider, MealEstimate;
 import '../../data/nutrition_providers.dart';
 import '../../data/providers.dart';
 import '../../domain/meal_vision.dart';
 import '../../voice/voice_pipeline.dart';
+import 'safety_banner.dart';
 
 /// Snap-a-meal: photo (+ optional hint) → Claude vision on the proxy →
 /// editable per-item nutrition → confirm → food entries with macros.
@@ -160,6 +163,22 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
     if (mounted) Navigator.of(context).maybePop();
   }
 
+  /// Judge the whole plate against the user's health goals, if any are set.
+  SafetyVerdict _verdict() {
+    final goals = ref.watch(healthProfileProvider).value?.goals ?? const {};
+    if (goals.isEmpty || _items.isEmpty) {
+      return const SafetyVerdict(SafetyLevel.good, []);
+    }
+    return assessFood(
+      FoodSafetyInput(
+        name: _items.map((i) => i.name).join(', '),
+        caloriesKcal: _items.fold(0, (s, i) => s + i.caloriesKcal),
+        sugarG: _items.fold(0.0, (s, i) => s + i.sugarG),
+      ),
+      goals,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Re-analyze escalates to the cloud model, so it only makes sense on Plus.
@@ -178,6 +197,7 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
             note: _note,
             lowConfidence: _lowConfidence,
             onDevice: _onDevice,
+            verdict: _verdict(),
             onReanalyze: aiOn && _onDevice && _pendingImage != null
                 ? () => _analyze(_pendingImage!)
                 : null,
@@ -280,6 +300,7 @@ class _Review extends StatelessWidget {
     required this.items,
     required this.note,
     required this.lowConfidence,
+    required this.verdict,
     required this.onChanged,
     required this.onRemove,
     required this.onConfirm,
@@ -290,6 +311,7 @@ class _Review extends StatelessWidget {
   final List<MealItem> items;
   final String note;
   final bool lowConfidence;
+  final SafetyVerdict verdict;
   final bool onDevice;
   final VoidCallback? onReanalyze;
   final void Function(int, MealItem) onChanged;
@@ -307,6 +329,7 @@ class _Review extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             children: [
+              SafetyBanner(verdict: verdict),
               if (lowConfidence)
                 Card(
                   color: theme.colorScheme.secondaryContainer,

@@ -9,6 +9,7 @@ import '../../auth/auth_service.dart';
 import '../../billing/subscription_service.dart';
 import '../../data/data_manager.dart';
 import '../../data/app_version.dart';
+import '../../data/health_profile_providers.dart';
 import '../../data/providers.dart';
 import '../../domain/reminder_rules.dart';
 import '../../health/health_providers.dart';
@@ -113,6 +114,16 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Health goals'),
+              subtitle: Text(_goalsSummary(ref)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/goals'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.hub_outlined),
               title: const Text('Integrations'),
               subtitle: Text(_integrationsSummary(ref)),
@@ -186,6 +197,15 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Summarizes the user's health goals for the Settings row.
+String _goalsSummary(WidgetRef ref) {
+  final profile = ref.watch(healthProfileProvider).value;
+  if (profile == null || profile.goals.isEmpty) {
+    return 'Set goals to check if a food fits you';
+  }
+  return profile.goals.map((g) => g.label).join(' · ');
 }
 
 /// Names whatever is currently linked, so the row is useful without tapping in.

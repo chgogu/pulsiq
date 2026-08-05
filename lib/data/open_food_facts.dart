@@ -7,11 +7,23 @@ import '../domain/food_db.dart';
 
 /// A packaged product resolved from a barcode.
 class ScannedFood {
-  const ScannedFood({required this.name, required this.macros, this.brand});
+  const ScannedFood({
+    required this.name,
+    required this.macros,
+    this.brand,
+    this.saturatedFatG,
+    this.sodiumMg,
+    this.ingredients,
+  });
 
   final String name;
   final String? brand;
   final FoodResolution macros;
+
+  /// Extra fields Open Food Facts often carries, used for the safety verdict.
+  final double? saturatedFatG;
+  final double? sodiumMg;
+  final String? ingredients;
 
   String get label {
     final b = brand?.trim();
@@ -64,13 +76,25 @@ ScannedFood? parseOffProduct(Map<String, dynamic> json) {
 
   double? num_(String k) => (n[k] as num?)?.toDouble();
 
-  double kcal, protein, carbs, fat, fiber;
+  double kcal, protein, carbs, fat, fiber, sugar, satFat, sodiumMg;
+  // Salt (g) → sodium (mg): 1 g salt ≈ 400 mg sodium. OFF gives both; prefer
+  // sodium when present.
+  double sodiumFrom(String suffix) {
+    final s = num_('sodium_$suffix');
+    if (s != null) return s * 1000; // OFF sodium is in grams
+    final salt = num_('salt_$suffix');
+    return salt != null ? salt * 400 : 0;
+  }
+
   if (num_('energy-kcal_serving') != null) {
     kcal = num_('energy-kcal_serving')!;
     protein = num_('proteins_serving') ?? 0;
     carbs = num_('carbohydrates_serving') ?? 0;
     fat = num_('fat_serving') ?? 0;
     fiber = num_('fiber_serving') ?? 0;
+    sugar = num_('sugars_serving') ?? 0;
+    satFat = num_('saturated-fat_serving') ?? 0;
+    sodiumMg = sodiumFrom('serving');
   } else {
     // Per-100g scaled to the stated serving grams, or one 100 g portion.
     final servingG = (product['serving_quantity'] as num?)?.toDouble();
@@ -80,6 +104,9 @@ ScannedFood? parseOffProduct(Map<String, dynamic> json) {
     carbs = (num_('carbohydrates_100g') ?? 0) * f;
     fat = (num_('fat_100g') ?? 0) * f;
     fiber = (num_('fiber_100g') ?? 0) * f;
+    sugar = (num_('sugars_100g') ?? 0) * f;
+    satFat = (num_('saturated-fat_100g') ?? 0) * f;
+    sodiumMg = sodiumFrom('100g') * f;
   }
 
   if (kcal <= 0 && protein <= 0 && carbs <= 0 && fat <= 0) return null;
@@ -90,15 +117,21 @@ ScannedFood? parseOffProduct(Map<String, dynamic> json) {
 
   final name = (product['product_name'] as String?)?.trim();
   final brand = (product['brands'] as String?)?.split(',').first.trim();
+  final ingredients =
+      (product['ingredients_text'] as String?)?.trim();
   return ScannedFood(
     name: name == null || name.isEmpty ? 'Scanned item' : name,
     brand: brand,
+    saturatedFatG: satFat > 0 ? double.parse(satFat.toStringAsFixed(1)) : null,
+    sodiumMg: sodiumMg > 0 ? sodiumMg.roundToDouble() : null,
+    ingredients: ingredients,
     macros: FoodResolution(
       caloriesKcal: kcal.round(),
       proteinG: double.parse(protein.toStringAsFixed(1)),
       fiberG: double.parse(fiber.toStringAsFixed(1)),
       carbsG: double.parse(carbs.toStringAsFixed(1)),
       fatG: double.parse(fat.toStringAsFixed(1)),
+      sugarG: double.parse(sugar.toStringAsFixed(1)),
       quality: quality,
       itemCount: 1,
     ),

@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../data/db/app_database.dart' show FuelQuality;
+import '../../data/health_profile_providers.dart';
 import '../../data/open_food_facts.dart';
 import '../../data/nutrition_providers.dart';
 import '../../data/providers.dart';
+import '../../domain/food_safety.dart';
+import 'safety_banner.dart';
 
 /// Scan a packaged food's barcode → Open Food Facts → macros, saved as a food
 /// entry. On-device scan + a free key-less lookup: $0, no proxy, no model.
@@ -69,6 +72,7 @@ class _ScanBarcodeScreenState extends ConsumerState<ScanBarcodeScreen> {
           fiberG: r.macros.fiberG,
           carbsG: r.macros.carbsG,
           fatG: r.macros.fatG,
+          sugarG: r.macros.sugarG,
           source: 'barcode',
         );
     ref.invalidate(macroHistoryProvider);
@@ -202,7 +206,7 @@ class _ResultPanel extends StatelessWidget {
   }
 }
 
-class _FoundBody extends StatelessWidget {
+class _FoundBody extends ConsumerWidget {
   const _FoundBody({required this.result, required this.onSave, required this.onRescan});
 
   final ScannedFood result;
@@ -210,9 +214,21 @@ class _FoundBody extends StatelessWidget {
   final VoidCallback onRescan;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final m = result.macros;
+    final goals = ref.watch(healthProfileProvider).value?.goals ?? const {};
+    final verdict = assessFood(
+      FoodSafetyInput(
+        name: result.label,
+        caloriesKcal: m.caloriesKcal,
+        sugarG: m.sugarG,
+        saturatedFatG: result.saturatedFatG,
+        sodiumMg: result.sodiumMg,
+        ingredients: result.ingredients,
+      ),
+      goals,
+    );
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,6 +239,7 @@ class _FoundBody extends StatelessWidget {
         const SizedBox(height: 2),
         Text('per serving', style: theme.textTheme.labelSmall),
         const SizedBox(height: 12),
+        SafetyBanner(verdict: verdict),
         Wrap(
           spacing: 8,
           runSpacing: 8,
