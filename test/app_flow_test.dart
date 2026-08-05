@@ -115,7 +115,9 @@ void main() {
       (tester) async {
     await pumpApp(tester);
     await pumpToDashboard(tester);
-    await pumpUntil(tester, find.text('0 / 2000 ml'));
+    // The hydration card now sits below Today's log (logging is the top job),
+    // so scroll it into view before asserting on it.
+    await tester.scrollUntilVisible(find.text('0 / 2000 ml'), 300);
     expect(find.text('0 / 2000 ml'), findsOneWidget);
 
     await tester.tap(find.byKey(_fab));
@@ -144,6 +146,8 @@ void main() {
     await tester.enterText(
         find.widgetWithText(TextField, 'What did you eat?'), 'Oats');
     await tester.pump();
+    await tester.ensureVisible(find.text('Add to log'));
+    await tester.pump();
     await tester.tap(find.text('Add to log'));
     for (var i = 0; i < 10; i++) {
       await tester.runAsync(
@@ -171,7 +175,9 @@ void main() {
 
     await gesture.up();
     await tester.pump();
-    // Mock LLM parses the note; optimistic insert updates the ring.
+    // Mock LLM parses the note; optimistic insert updates the ring. The
+    // hydration card now lives below Today's log, so scroll it into view.
+    await tester.scrollUntilVisible(find.textContaining('/ 2000 ml'), 300);
     await pumpUntil(tester, find.text('500 / 2000 ml'));
     expect(find.text('Release to submit'), findsNothing);
     expect(find.text('500 / 2000 ml'), findsOneWidget);

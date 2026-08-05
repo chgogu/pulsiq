@@ -289,6 +289,18 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                 style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(46)),
               ),
+              const SizedBox(height: 8),
+              // A check, not a log — deciding whether to eat, without adding it.
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).maybePop();
+                  context.push('/check-food');
+                },
+                icon: const Icon(Icons.fact_check_outlined),
+                label: const Text('Can I eat this? — check, don\'t log'),
+                style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46)),
+              ),
               const SizedBox(height: 12),
             ],
             if (!editing)

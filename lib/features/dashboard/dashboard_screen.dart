@@ -57,37 +57,32 @@ class DashboardScreen extends ConsumerWidget {
           const MorningResetCard(),
           ScoreHero(result: score),
           const SizedBox(height: 16),
-          // One card per connected source, each hiding itself when its own
-          // source is off. WHOOP leads when linked — recovery is the biometric
-          // headline — with Apple Health / Health Connect directly under it.
-          // Independent so switching one off never blanks the other.
-          const WhoopCard(),
-          const PlatformHealthCard(),
-          // Fuel and its interpretation sit directly under the score: this is
-          // the food data the user came to see, and burying it under the
-          // forecast/walk cards meant it never made it above the fold.
-          const FuelCard(),
-          const InsightsCard(),
-          const CutDownCard(),
-          HydrationCard(consumedMl: consumedMl, targetMl: targetMl),
-          const SizedBox(height: 16),
-          const WalkTimerCard(),
-          const EveningForecastCard(),
-          const PulseCard(),
-          const SizedBox(height: 16),
-          const SparkCard(),
-          const SizedBox(height: 8),
+          // Two clearly separate actions, right under the score so logging
+          // never needs a scroll: LOG what you ate (goes in the diary) vs
+          // CHECK whether you can eat something (a verdict, no diary entry).
           Row(
             children: [
-              Text("Today's log", style: theme.textTheme.titleMedium),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () => showEntrySheet(context),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add'),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => showEntrySheet(context),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Log food'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/check-food'),
+                  icon: const Icon(Icons.fact_check_outlined, size: 18),
+                  label: const Text('Can I eat this?'),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          // Today's log sits directly below the score — the daily job, above
+          // the analytics that reward it.
+          Text("Today's log", style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           switch (feed) {
             AsyncData(value: final items) when items.isEmpty => Padding(
@@ -114,6 +109,21 @@ class DashboardScreen extends ConsumerWidget {
                 child: Center(child: CircularProgressIndicator()),
               ),
           },
+          const SizedBox(height: 20),
+          // Analytics follow the log — the reward for having logged, not the
+          // wall between the user and the log.
+          const WhoopCard(),
+          const PlatformHealthCard(),
+          const FuelCard(),
+          const InsightsCard(),
+          const CutDownCard(),
+          HydrationCard(consumedMl: consumedMl, targetMl: targetMl),
+          const SizedBox(height: 16),
+          const WalkTimerCard(),
+          const EveningForecastCard(),
+          const PulseCard(),
+          const SizedBox(height: 16),
+          const SparkCard(),
         ],
       ),
     );

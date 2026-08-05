@@ -5,6 +5,7 @@ import 'features/dashboard/dashboard_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/sign_in_screen.dart';
 import 'features/lock/lock_gate.dart';
+import 'features/nutrition/check_food_screen.dart';
 import 'features/nutrition/nutrition_screen.dart';
 import 'features/nutrition/scan_barcode_screen.dart';
 import 'features/nutrition/snap_meal_screen.dart';
@@ -47,6 +48,10 @@ GoRouter buildRouter() => GoRouter(
             GoRoute(
               path: '/scan-barcode',
               builder: (_, _) => const ScanBarcodeScreen(),
+            ),
+            GoRoute(
+              path: '/check-food',
+              builder: (_, _) => const CheckFoodScreen(),
             ),
             GoRoute(
               path: '/settings',
