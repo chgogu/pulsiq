@@ -108,12 +108,19 @@ class FoodDb {
       final byLen = b.tokens.length.compareTo(a.tokens.length);
       return byLen != 0 ? byLen : a.entry.pri.compareTo(b.entry.pri);
     });
+    // Space/plural-collapsed lookup: "brazilnut", "brazil nut", "brazil nuts"
+    // all key to the same entry. Sorted order means curated (pri 0) wins ties.
+    for (final a in _aliasIndex) {
+      final key = _collapse(a.tokens);
+      _collapsedIndex.putIfAbsent(key, () => a.entry);
+    }
     _unitWords = {...genericUnits.keys, ..._measureWords};
   }
 
   final List<FoodDbEntry> foods;
   final Map<String, double> genericUnits;
   final List<({FoodDbEntry entry, List<String> tokens})> _aliasIndex = [];
+  final Map<String, FoodDbEntry> _collapsedIndex = {};
   late final Set<String> _unitWords;
 
   static FoodDb parse(String jsonStr) {
@@ -229,8 +236,20 @@ class FoodDb {
       }
     }
 
-    // Anything left that isn't filler is an unknown food → escalate.
-    if (remaining.any((t) => !_fillerWords.contains(t))) return null;
+    // Anything left that isn't filler is unknown by token match. Before giving
+    // up, try the collapsed form of the whole food part — this rescues
+    // compounds the tokenizer split ("brazil nut" → "brazilnut") and plurals.
+    final leftover = remaining.where((t) => !_fillerWords.contains(t)).toList();
+    if (leftover.isNotEmpty) {
+      // The whole food part may be one compound the tokenizer split and only
+      // partially matched ("brazil nut" → a stray "nut" hit, "brazil" left).
+      // Collapsing the whole thing rescues it, and wins over the partial.
+      final hit = _collapsedIndex[_collapse(tokens)];
+      if (hit != null) {
+        return [(entry: hit, grams: _grams(hit, count, unit))];
+      }
+      return null; // unknown food → escalate
+    }
     if (matched.isEmpty) return null;
 
     return [
@@ -290,7 +309,25 @@ class FoodDb {
       .replaceAll(RegExp(r'[^a-z0-9/. ]'), ' ')
       .split(RegExp(r'\s+'))
       .where((t) => t.isNotEmpty)
+      .map(_singular)
       .toList();
+
+  /// Fold a trailing plural 's' so "nuts" matches "nut" and "brazilnuts"
+  /// matches "brazilnut". Skips short words and "ss" endings (glass, hummus)
+  /// to avoid mangling them. Applied to both aliases and queries, so matching
+  /// stays internally consistent.
+  static String _singular(String t) {
+    if (t.length > 3 && t.endsWith('s') && !t.endsWith('ss')) {
+      return t.substring(0, t.length - 1);
+    }
+    return t;
+  }
+
+  /// A word with spaces and plurals removed — "brazil nut" and "brazilnuts"
+  /// both collapse to "brazilnut", so a compound the token matcher splits can
+  /// still resolve.
+  static String _collapse(Iterable<String> tokens) =>
+      tokens.map(_singular).join();
 
   /// Every token in [needle] is present in [haystack] (multiset-aware).
   static bool _containsAll(List<String> haystack, List<String> needle) {
