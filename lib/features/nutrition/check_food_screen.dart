@@ -6,7 +6,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../data/db/app_database.dart' show FuelQuality;
 import '../../data/health_profile_providers.dart';
-import '../../data/meal_estimator.dart' show foodDbProvider;
+import '../../data/meal_estimator.dart'
+    show foodDbProvider, mealEstimatorProvider;
 import '../../data/nutrition_providers.dart';
 import '../../data/open_food_facts.dart';
 import '../../data/food_image_classifier.dart';
@@ -65,11 +66,41 @@ class _CheckFoodScreenState extends ConsumerState<CheckFoodScreen> {
   _Subject? _subject;
   MobileScannerController? _scanner;
   bool _handled = false;
+  final _typed = TextEditingController();
 
   @override
   void dispose() {
     _scanner?.dispose();
+    _typed.dispose();
     super.dispose();
+  }
+
+  /// Type a food name → estimate it (table / on-device) → verdict. The
+  /// reliable path when there's no barcode and a photo won't identify.
+  Future<void> _checkTyped() async {
+    final text = _typed.text.trim();
+    if (text.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _phase = _Phase.analyzing);
+    final est = await ref.read(mealEstimatorProvider).estimate(text);
+    if (!mounted) return;
+    if (est == null) {
+      setState(() => _phase = _Phase.notFound);
+      return;
+    }
+    setState(() {
+      _subject = _Subject(
+        name: text,
+        caloriesKcal: est.caloriesKcal,
+        sugarG: est.sugarG,
+        quality: est.quality.name,
+        proteinG: est.proteinG,
+        fiberG: est.fiberG,
+        carbsG: est.carbsG,
+        fatG: est.fatG,
+      );
+      _phase = _Phase.result;
+    });
   }
 
   void _startScan() {
@@ -188,7 +219,12 @@ class _CheckFoodScreenState extends ConsumerState<CheckFoodScreen> {
       body: goals.isEmpty
           ? const _NoGoals()
           : switch (_phase) {
-              _Phase.intro => _Intro(onScan: _startScan, onSnap: _snap),
+              _Phase.intro => _Intro(
+                  onScan: _startScan,
+                  onSnap: _snap,
+                  typed: _typed,
+                  onCheckTyped: _checkTyped,
+                ),
               _Phase.scanning => _Scanner(
                   controller: _scanner!, onDetect: _onDetect),
               _Phase.analyzing => const Center(
@@ -250,10 +286,17 @@ class _NoGoals extends StatelessWidget {
 }
 
 class _Intro extends StatelessWidget {
-  const _Intro({required this.onScan, required this.onSnap});
+  const _Intro({
+    required this.onScan,
+    required this.onSnap,
+    required this.typed,
+    required this.onCheckTyped,
+  });
 
   final VoidCallback onScan;
   final void Function(ImageSource) onSnap;
+  final TextEditingController typed;
+  final VoidCallback onCheckTyped;
 
   @override
   Widget build(BuildContext context) {
@@ -269,12 +312,29 @@ class _Intro extends StatelessWidget {
                 ?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
         Text(
-          'Scan a product or snap a dish and get a straight yes or no for your '
-          'goals. This won\'t add it to your log — it\'s just a check.',
+          'Type a food, scan a product, or snap a dish and get a straight yes '
+          'or no for your goals. This won\'t add it to your log — it\'s just a '
+          'check.',
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+        // Type-a-food: the reliable path, no camera needed.
+        TextField(
+          controller: typed,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => onCheckTyped(),
+          decoration: InputDecoration(
+            hintText: 'e.g. gulab jamun, oat milk latte',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.edit_outlined),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              onPressed: onCheckTyped,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: onScan,
           icon: const Icon(Icons.qr_code_scanner),

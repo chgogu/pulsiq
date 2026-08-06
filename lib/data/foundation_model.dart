@@ -29,7 +29,13 @@ class FoundationModel {
   Future<String?> estimateMeal(String description) async {
     if (kIsWeb || !Platform.isIOS) return null;
     try {
-      return await _channel.invokeMethod<String>('estimateMeal', description);
+      // Bound the wait: the on-device model can take a few seconds and, if the
+      // system is busy or the model is still loading, could otherwise hang the
+      // "Estimate" button indefinitely. On timeout we fall through to manual
+      // entry rather than spin forever.
+      return await _channel
+          .invokeMethod<String>('estimateMeal', description)
+          .timeout(const Duration(seconds: 12), onTimeout: () => null);
     } catch (_) {
       return null;
     }
@@ -41,7 +47,9 @@ class FoundationModel {
   Future<String?> parseVoiceLog(String transcript) async {
     if (kIsWeb || !Platform.isIOS) return null;
     try {
-      return await _channel.invokeMethod<String>('parseVoiceLog', transcript);
+      return await _channel
+          .invokeMethod<String>('parseVoiceLog', transcript)
+          .timeout(const Duration(seconds: 12), onTimeout: () => null);
     } catch (_) {
       return null;
     }

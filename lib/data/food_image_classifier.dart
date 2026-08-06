@@ -38,6 +38,7 @@ class FoodImageClassifier {
                 fiberG: res.fiberG,
                 carbsG: res.carbsG,
                 fatG: res.fatG,
+                sugarG: res.sugarG,
                 qualityScore: res.quality,
               ),
             ],

@@ -206,11 +206,13 @@ class _SnapMealScreenState extends ConsumerState<SnapMealScreen> {
             onConfirm: _items.isEmpty ? null : _confirm,
           ),
         _Phase.error => _ErrorView(
+            hint: _hint,
+            // Type what it is and look it up — the reliable path when a photo
+            // can't be read on-device.
+            onLookup: _analyzeHintOnly,
             onRetry: () => setState(() => _phase = _Phase.intro),
-            // Reading a photo is the Plus feature; free users get the offer
-            // instead of a dead end.
-            onGetPlus:
-                aiOn ? null : () => context.push('/plus'),
+            // Photo AI is the Plus feature; free users also get the offer.
+            onGetPlus: aiOn ? null : () => context.push('/plus'),
           ),
         _Phase.intro => _Intro(
             hint: _hint,
@@ -533,9 +535,19 @@ class _Busy extends StatelessWidget {
 }
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.onRetry, this.onGetPlus});
+  const _ErrorView({
+    required this.onRetry,
+    required this.hint,
+    required this.onLookup,
+    this.onGetPlus,
+  });
 
   final VoidCallback onRetry;
+  final TextEditingController hint;
+
+  /// Type-a-name → look it up in the food library. The dependable recovery
+  /// when a photo can't be identified on-device.
+  final VoidCallback onLookup;
 
   /// Set for free users: reading a photo automatically is the Plus feature.
   final VoidCallback? onGetPlus;
@@ -543,41 +555,57 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.no_photography_outlined,
-                size: 48, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text("Couldn't identify that meal",
-                style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              onGetPlus == null
-                  ? 'Try a clearer photo, or type what it is in the hint box.'
-                  : 'Type what it is in the hint box and we\'ll look it up in '
-                      'your food library — or let Plus read the photo for you.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            if (onGetPlus != null) ...[
-              FilledButton.icon(
-                onPressed: onGetPlus,
-                icon: const Icon(Icons.auto_awesome, size: 18),
-                label: const Text('Read photos with Plus'),
-              ),
-              const SizedBox(height: 8),
-              TextButton(onPressed: onRetry, child: const Text('Not now')),
-            ] else
-              FilledButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(28, 32, 28, 96),
+      children: [
+        Icon(Icons.no_photography_outlined,
+            size: 48, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(height: 12),
+        Text("Couldn't identify that meal",
+            textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Type what it is and we\'ll look it up in your food library.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
-      ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: hint,
+          autofocus: true,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => onLookup(),
+          decoration: InputDecoration(
+            hintText: 'e.g. chicken biryani',
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              onPressed: onLookup,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: onLookup,
+          icon: const Icon(Icons.search),
+          label: const Text('Look it up'),
+        ),
+        if (onGetPlus != null) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton.icon(
+              onPressed: onGetPlus,
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: const Text('Or let Plus read the photo'),
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        Center(
+            child: TextButton(
+                onPressed: onRetry, child: const Text('Start over'))),
+      ],
     );
   }
 }
