@@ -3797,6 +3797,560 @@ class MealCacheRowsCompanion extends UpdateCompanion<MealCacheRow> {
   }
 }
 
+class $HealthScoreSnapshotsTable extends HealthScoreSnapshots
+    with TableInfo<$HealthScoreSnapshotsTable, HealthScoreSnapshot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HealthScoreSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<DateTime> day = GeneratedColumn<DateTime>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scoreMeta = const VerificationMeta('score');
+  @override
+  late final GeneratedColumn<int> score = GeneratedColumn<int>(
+    'score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hrvMsMeta = const VerificationMeta('hrvMs');
+  @override
+  late final GeneratedColumn<double> hrvMs = GeneratedColumn<double>(
+    'hrv_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _restingHrMeta = const VerificationMeta(
+    'restingHr',
+  );
+  @override
+  late final GeneratedColumn<double> restingHr = GeneratedColumn<double>(
+    'resting_hr',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sleepHoursMeta = const VerificationMeta(
+    'sleepHours',
+  );
+  @override
+  late final GeneratedColumn<double> sleepHours = GeneratedColumn<double>(
+    'sleep_hours',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recoveryPctMeta = const VerificationMeta(
+    'recoveryPct',
+  );
+  @override
+  late final GeneratedColumn<int> recoveryPct = GeneratedColumn<int>(
+    'recovery_pct',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _stepsMeta = const VerificationMeta('steps');
+  @override
+  late final GeneratedColumn<int> steps = GeneratedColumn<int>(
+    'steps',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    day,
+    source,
+    score,
+    hrvMs,
+    restingHr,
+    sleepHours,
+    recoveryPct,
+    steps,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'health_score_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<HealthScoreSnapshot> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('score')) {
+      context.handle(
+        _scoreMeta,
+        score.isAcceptableOrUnknown(data['score']!, _scoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreMeta);
+    }
+    if (data.containsKey('hrv_ms')) {
+      context.handle(
+        _hrvMsMeta,
+        hrvMs.isAcceptableOrUnknown(data['hrv_ms']!, _hrvMsMeta),
+      );
+    }
+    if (data.containsKey('resting_hr')) {
+      context.handle(
+        _restingHrMeta,
+        restingHr.isAcceptableOrUnknown(data['resting_hr']!, _restingHrMeta),
+      );
+    }
+    if (data.containsKey('sleep_hours')) {
+      context.handle(
+        _sleepHoursMeta,
+        sleepHours.isAcceptableOrUnknown(data['sleep_hours']!, _sleepHoursMeta),
+      );
+    }
+    if (data.containsKey('recovery_pct')) {
+      context.handle(
+        _recoveryPctMeta,
+        recoveryPct.isAcceptableOrUnknown(
+          data['recovery_pct']!,
+          _recoveryPctMeta,
+        ),
+      );
+    }
+    if (data.containsKey('steps')) {
+      context.handle(
+        _stepsMeta,
+        steps.isAcceptableOrUnknown(data['steps']!, _stepsMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HealthScoreSnapshot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HealthScoreSnapshot(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}day'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      score: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score'],
+      )!,
+      hrvMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}hrv_ms'],
+      ),
+      restingHr: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}resting_hr'],
+      ),
+      sleepHours: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sleep_hours'],
+      ),
+      recoveryPct: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recovery_pct'],
+      ),
+      steps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}steps'],
+      ),
+    );
+  }
+
+  @override
+  $HealthScoreSnapshotsTable createAlias(String alias) {
+    return $HealthScoreSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class HealthScoreSnapshot extends DataClass
+    implements Insertable<HealthScoreSnapshot> {
+  final int id;
+  final DateTime day;
+  final String source;
+  final int score;
+  final double? hrvMs;
+  final double? restingHr;
+  final double? sleepHours;
+  final int? recoveryPct;
+  final int? steps;
+  const HealthScoreSnapshot({
+    required this.id,
+    required this.day,
+    required this.source,
+    required this.score,
+    this.hrvMs,
+    this.restingHr,
+    this.sleepHours,
+    this.recoveryPct,
+    this.steps,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['day'] = Variable<DateTime>(day);
+    map['source'] = Variable<String>(source);
+    map['score'] = Variable<int>(score);
+    if (!nullToAbsent || hrvMs != null) {
+      map['hrv_ms'] = Variable<double>(hrvMs);
+    }
+    if (!nullToAbsent || restingHr != null) {
+      map['resting_hr'] = Variable<double>(restingHr);
+    }
+    if (!nullToAbsent || sleepHours != null) {
+      map['sleep_hours'] = Variable<double>(sleepHours);
+    }
+    if (!nullToAbsent || recoveryPct != null) {
+      map['recovery_pct'] = Variable<int>(recoveryPct);
+    }
+    if (!nullToAbsent || steps != null) {
+      map['steps'] = Variable<int>(steps);
+    }
+    return map;
+  }
+
+  HealthScoreSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return HealthScoreSnapshotsCompanion(
+      id: Value(id),
+      day: Value(day),
+      source: Value(source),
+      score: Value(score),
+      hrvMs: hrvMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hrvMs),
+      restingHr: restingHr == null && nullToAbsent
+          ? const Value.absent()
+          : Value(restingHr),
+      sleepHours: sleepHours == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sleepHours),
+      recoveryPct: recoveryPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recoveryPct),
+      steps: steps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(steps),
+    );
+  }
+
+  factory HealthScoreSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HealthScoreSnapshot(
+      id: serializer.fromJson<int>(json['id']),
+      day: serializer.fromJson<DateTime>(json['day']),
+      source: serializer.fromJson<String>(json['source']),
+      score: serializer.fromJson<int>(json['score']),
+      hrvMs: serializer.fromJson<double?>(json['hrvMs']),
+      restingHr: serializer.fromJson<double?>(json['restingHr']),
+      sleepHours: serializer.fromJson<double?>(json['sleepHours']),
+      recoveryPct: serializer.fromJson<int?>(json['recoveryPct']),
+      steps: serializer.fromJson<int?>(json['steps']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'day': serializer.toJson<DateTime>(day),
+      'source': serializer.toJson<String>(source),
+      'score': serializer.toJson<int>(score),
+      'hrvMs': serializer.toJson<double?>(hrvMs),
+      'restingHr': serializer.toJson<double?>(restingHr),
+      'sleepHours': serializer.toJson<double?>(sleepHours),
+      'recoveryPct': serializer.toJson<int?>(recoveryPct),
+      'steps': serializer.toJson<int?>(steps),
+    };
+  }
+
+  HealthScoreSnapshot copyWith({
+    int? id,
+    DateTime? day,
+    String? source,
+    int? score,
+    Value<double?> hrvMs = const Value.absent(),
+    Value<double?> restingHr = const Value.absent(),
+    Value<double?> sleepHours = const Value.absent(),
+    Value<int?> recoveryPct = const Value.absent(),
+    Value<int?> steps = const Value.absent(),
+  }) => HealthScoreSnapshot(
+    id: id ?? this.id,
+    day: day ?? this.day,
+    source: source ?? this.source,
+    score: score ?? this.score,
+    hrvMs: hrvMs.present ? hrvMs.value : this.hrvMs,
+    restingHr: restingHr.present ? restingHr.value : this.restingHr,
+    sleepHours: sleepHours.present ? sleepHours.value : this.sleepHours,
+    recoveryPct: recoveryPct.present ? recoveryPct.value : this.recoveryPct,
+    steps: steps.present ? steps.value : this.steps,
+  );
+  HealthScoreSnapshot copyWithCompanion(HealthScoreSnapshotsCompanion data) {
+    return HealthScoreSnapshot(
+      id: data.id.present ? data.id.value : this.id,
+      day: data.day.present ? data.day.value : this.day,
+      source: data.source.present ? data.source.value : this.source,
+      score: data.score.present ? data.score.value : this.score,
+      hrvMs: data.hrvMs.present ? data.hrvMs.value : this.hrvMs,
+      restingHr: data.restingHr.present ? data.restingHr.value : this.restingHr,
+      sleepHours: data.sleepHours.present
+          ? data.sleepHours.value
+          : this.sleepHours,
+      recoveryPct: data.recoveryPct.present
+          ? data.recoveryPct.value
+          : this.recoveryPct,
+      steps: data.steps.present ? data.steps.value : this.steps,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthScoreSnapshot(')
+          ..write('id: $id, ')
+          ..write('day: $day, ')
+          ..write('source: $source, ')
+          ..write('score: $score, ')
+          ..write('hrvMs: $hrvMs, ')
+          ..write('restingHr: $restingHr, ')
+          ..write('sleepHours: $sleepHours, ')
+          ..write('recoveryPct: $recoveryPct, ')
+          ..write('steps: $steps')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    day,
+    source,
+    score,
+    hrvMs,
+    restingHr,
+    sleepHours,
+    recoveryPct,
+    steps,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HealthScoreSnapshot &&
+          other.id == this.id &&
+          other.day == this.day &&
+          other.source == this.source &&
+          other.score == this.score &&
+          other.hrvMs == this.hrvMs &&
+          other.restingHr == this.restingHr &&
+          other.sleepHours == this.sleepHours &&
+          other.recoveryPct == this.recoveryPct &&
+          other.steps == this.steps);
+}
+
+class HealthScoreSnapshotsCompanion
+    extends UpdateCompanion<HealthScoreSnapshot> {
+  final Value<int> id;
+  final Value<DateTime> day;
+  final Value<String> source;
+  final Value<int> score;
+  final Value<double?> hrvMs;
+  final Value<double?> restingHr;
+  final Value<double?> sleepHours;
+  final Value<int?> recoveryPct;
+  final Value<int?> steps;
+  const HealthScoreSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.day = const Value.absent(),
+    this.source = const Value.absent(),
+    this.score = const Value.absent(),
+    this.hrvMs = const Value.absent(),
+    this.restingHr = const Value.absent(),
+    this.sleepHours = const Value.absent(),
+    this.recoveryPct = const Value.absent(),
+    this.steps = const Value.absent(),
+  });
+  HealthScoreSnapshotsCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime day,
+    required String source,
+    required int score,
+    this.hrvMs = const Value.absent(),
+    this.restingHr = const Value.absent(),
+    this.sleepHours = const Value.absent(),
+    this.recoveryPct = const Value.absent(),
+    this.steps = const Value.absent(),
+  }) : day = Value(day),
+       source = Value(source),
+       score = Value(score);
+  static Insertable<HealthScoreSnapshot> custom({
+    Expression<int>? id,
+    Expression<DateTime>? day,
+    Expression<String>? source,
+    Expression<int>? score,
+    Expression<double>? hrvMs,
+    Expression<double>? restingHr,
+    Expression<double>? sleepHours,
+    Expression<int>? recoveryPct,
+    Expression<int>? steps,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (day != null) 'day': day,
+      if (source != null) 'source': source,
+      if (score != null) 'score': score,
+      if (hrvMs != null) 'hrv_ms': hrvMs,
+      if (restingHr != null) 'resting_hr': restingHr,
+      if (sleepHours != null) 'sleep_hours': sleepHours,
+      if (recoveryPct != null) 'recovery_pct': recoveryPct,
+      if (steps != null) 'steps': steps,
+    });
+  }
+
+  HealthScoreSnapshotsCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? day,
+    Value<String>? source,
+    Value<int>? score,
+    Value<double?>? hrvMs,
+    Value<double?>? restingHr,
+    Value<double?>? sleepHours,
+    Value<int?>? recoveryPct,
+    Value<int?>? steps,
+  }) {
+    return HealthScoreSnapshotsCompanion(
+      id: id ?? this.id,
+      day: day ?? this.day,
+      source: source ?? this.source,
+      score: score ?? this.score,
+      hrvMs: hrvMs ?? this.hrvMs,
+      restingHr: restingHr ?? this.restingHr,
+      sleepHours: sleepHours ?? this.sleepHours,
+      recoveryPct: recoveryPct ?? this.recoveryPct,
+      steps: steps ?? this.steps,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<DateTime>(day.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (score.present) {
+      map['score'] = Variable<int>(score.value);
+    }
+    if (hrvMs.present) {
+      map['hrv_ms'] = Variable<double>(hrvMs.value);
+    }
+    if (restingHr.present) {
+      map['resting_hr'] = Variable<double>(restingHr.value);
+    }
+    if (sleepHours.present) {
+      map['sleep_hours'] = Variable<double>(sleepHours.value);
+    }
+    if (recoveryPct.present) {
+      map['recovery_pct'] = Variable<int>(recoveryPct.value);
+    }
+    if (steps.present) {
+      map['steps'] = Variable<int>(steps.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthScoreSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('day: $day, ')
+          ..write('source: $source, ')
+          ..write('score: $score, ')
+          ..write('hrvMs: $hrvMs, ')
+          ..write('restingHr: $restingHr, ')
+          ..write('sleepHours: $sleepHours, ')
+          ..write('recoveryPct: $recoveryPct, ')
+          ..write('steps: $steps')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3817,6 +4371,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $MealCacheRowsTable mealCacheRows = $MealCacheRowsTable(this);
+  late final $HealthScoreSnapshotsTable healthScoreSnapshots =
+      $HealthScoreSnapshotsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3831,6 +4387,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSettings,
     weatherCacheRows,
     mealCacheRows,
+    healthScoreSnapshots,
   ];
 }
 
@@ -5851,6 +6408,296 @@ typedef $$MealCacheRowsTableProcessedTableManager =
       MealCacheRow,
       PrefetchHooks Function()
     >;
+typedef $$HealthScoreSnapshotsTableCreateCompanionBuilder =
+    HealthScoreSnapshotsCompanion Function({
+      Value<int> id,
+      required DateTime day,
+      required String source,
+      required int score,
+      Value<double?> hrvMs,
+      Value<double?> restingHr,
+      Value<double?> sleepHours,
+      Value<int?> recoveryPct,
+      Value<int?> steps,
+    });
+typedef $$HealthScoreSnapshotsTableUpdateCompanionBuilder =
+    HealthScoreSnapshotsCompanion Function({
+      Value<int> id,
+      Value<DateTime> day,
+      Value<String> source,
+      Value<int> score,
+      Value<double?> hrvMs,
+      Value<double?> restingHr,
+      Value<double?> sleepHours,
+      Value<int?> recoveryPct,
+      Value<int?> steps,
+    });
+
+class $$HealthScoreSnapshotsTableFilterComposer
+    extends Composer<_$AppDatabase, $HealthScoreSnapshotsTable> {
+  $$HealthScoreSnapshotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get hrvMs => $composableBuilder(
+    column: $table.hrvMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get restingHr => $composableBuilder(
+    column: $table.restingHr,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sleepHours => $composableBuilder(
+    column: $table.sleepHours,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get recoveryPct => $composableBuilder(
+    column: $table.recoveryPct,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get steps => $composableBuilder(
+    column: $table.steps,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$HealthScoreSnapshotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $HealthScoreSnapshotsTable> {
+  $$HealthScoreSnapshotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get hrvMs => $composableBuilder(
+    column: $table.hrvMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get restingHr => $composableBuilder(
+    column: $table.restingHr,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sleepHours => $composableBuilder(
+    column: $table.sleepHours,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get recoveryPct => $composableBuilder(
+    column: $table.recoveryPct,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get steps => $composableBuilder(
+    column: $table.steps,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$HealthScoreSnapshotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HealthScoreSnapshotsTable> {
+  $$HealthScoreSnapshotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get score =>
+      $composableBuilder(column: $table.score, builder: (column) => column);
+
+  GeneratedColumn<double> get hrvMs =>
+      $composableBuilder(column: $table.hrvMs, builder: (column) => column);
+
+  GeneratedColumn<double> get restingHr =>
+      $composableBuilder(column: $table.restingHr, builder: (column) => column);
+
+  GeneratedColumn<double> get sleepHours => $composableBuilder(
+    column: $table.sleepHours,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get recoveryPct => $composableBuilder(
+    column: $table.recoveryPct,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get steps =>
+      $composableBuilder(column: $table.steps, builder: (column) => column);
+}
+
+class $$HealthScoreSnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $HealthScoreSnapshotsTable,
+          HealthScoreSnapshot,
+          $$HealthScoreSnapshotsTableFilterComposer,
+          $$HealthScoreSnapshotsTableOrderingComposer,
+          $$HealthScoreSnapshotsTableAnnotationComposer,
+          $$HealthScoreSnapshotsTableCreateCompanionBuilder,
+          $$HealthScoreSnapshotsTableUpdateCompanionBuilder,
+          (
+            HealthScoreSnapshot,
+            BaseReferences<
+              _$AppDatabase,
+              $HealthScoreSnapshotsTable,
+              HealthScoreSnapshot
+            >,
+          ),
+          HealthScoreSnapshot,
+          PrefetchHooks Function()
+        > {
+  $$HealthScoreSnapshotsTableTableManager(
+    _$AppDatabase db,
+    $HealthScoreSnapshotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HealthScoreSnapshotsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HealthScoreSnapshotsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$HealthScoreSnapshotsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> day = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int> score = const Value.absent(),
+                Value<double?> hrvMs = const Value.absent(),
+                Value<double?> restingHr = const Value.absent(),
+                Value<double?> sleepHours = const Value.absent(),
+                Value<int?> recoveryPct = const Value.absent(),
+                Value<int?> steps = const Value.absent(),
+              }) => HealthScoreSnapshotsCompanion(
+                id: id,
+                day: day,
+                source: source,
+                score: score,
+                hrvMs: hrvMs,
+                restingHr: restingHr,
+                sleepHours: sleepHours,
+                recoveryPct: recoveryPct,
+                steps: steps,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime day,
+                required String source,
+                required int score,
+                Value<double?> hrvMs = const Value.absent(),
+                Value<double?> restingHr = const Value.absent(),
+                Value<double?> sleepHours = const Value.absent(),
+                Value<int?> recoveryPct = const Value.absent(),
+                Value<int?> steps = const Value.absent(),
+              }) => HealthScoreSnapshotsCompanion.insert(
+                id: id,
+                day: day,
+                source: source,
+                score: score,
+                hrvMs: hrvMs,
+                restingHr: restingHr,
+                sleepHours: sleepHours,
+                recoveryPct: recoveryPct,
+                steps: steps,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$HealthScoreSnapshotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $HealthScoreSnapshotsTable,
+      HealthScoreSnapshot,
+      $$HealthScoreSnapshotsTableFilterComposer,
+      $$HealthScoreSnapshotsTableOrderingComposer,
+      $$HealthScoreSnapshotsTableAnnotationComposer,
+      $$HealthScoreSnapshotsTableCreateCompanionBuilder,
+      $$HealthScoreSnapshotsTableUpdateCompanionBuilder,
+      (
+        HealthScoreSnapshot,
+        BaseReferences<
+          _$AppDatabase,
+          $HealthScoreSnapshotsTable,
+          HealthScoreSnapshot
+        >,
+      ),
+      HealthScoreSnapshot,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5873,4 +6720,6 @@ class $AppDatabaseManager {
       $$WeatherCacheRowsTableTableManager(_db, _db.weatherCacheRows);
   $$MealCacheRowsTableTableManager get mealCacheRows =>
       $$MealCacheRowsTableTableManager(_db, _db.mealCacheRows);
+  $$HealthScoreSnapshotsTableTableManager get healthScoreSnapshots =>
+      $$HealthScoreSnapshotsTableTableManager(_db, _db.healthScoreSnapshots);
 }

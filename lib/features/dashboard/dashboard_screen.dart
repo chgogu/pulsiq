@@ -9,6 +9,7 @@ import '../nutrition/fuel_card.dart';
 import '../nutrition/insights_card.dart';
 import '../walk/walk_timer_card.dart';
 import '../logging/entry_sheet.dart';
+import 'averages_card.dart';
 import 'evening_forecast_card.dart';
 import 'hydration_card.dart';
 import 'log_tile.dart';
@@ -115,8 +116,9 @@ class DashboardScreen extends ConsumerWidget {
               ),
           },
           const SizedBox(height: 20),
-          // Analytics follow the log — the reward for having logged, not the
-          // wall between the user and the log.
+          // Averages roll up the history right under the daily log, then the
+          // per-source analytics follow — the reward for having logged.
+          const AveragesCard(),
           const WhoopCard(),
           const PlatformHealthCard(),
           const FuelCard(),

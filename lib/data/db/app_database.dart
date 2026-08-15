@@ -115,6 +115,24 @@ class MealCacheRows extends Table {
   Set<Column> get primaryKey => {query};
 }
 
+/// One day's computed Health Score per source, plus the analytics behind it,
+/// so history accumulates beyond the wearable API's rolling window and can be
+/// rendered without re-fetching. Upserted by (day, source). Schema v7.
+class HealthScoreSnapshots extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get day => dateTime()(); // midnight-aligned local day
+  TextColumn get source => text()(); // whoop | appleHealth
+  IntColumn get score => integer()(); // 0–100
+  RealColumn get hrvMs => real().nullable()();
+  RealColumn get restingHr => real().nullable()();
+  RealColumn get sleepHours => real().nullable()();
+  IntColumn get recoveryPct => integer().nullable()();
+  IntColumn get steps => integer().nullable()();
+
+  @override
+  List<String> get customConstraints => ['UNIQUE (day, source)'];
+}
+
 @DriftDatabase(
   tables: [
     FoodEntries,
@@ -126,6 +144,7 @@ class MealCacheRows extends Table {
     AppSettings,
     WeatherCacheRows,
     MealCacheRows,
+    HealthScoreSnapshots,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -134,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -168,8 +187,37 @@ class AppDatabase extends _$AppDatabase {
           if (from < 6) {
             await m.addColumn(mealCacheRows, mealCacheRows.sugarG);
           }
+          // v7: per-source Health Score history (new table, additive).
+          if (from < 7) {
+            await m.createTable(healthScoreSnapshots);
+          }
         },
       );
+
+  /// Upsert one day's Health Score snapshots (keyed by day+source), so the
+  /// latest fetch refreshes existing days and appends new ones without dupes.
+  Future<void> upsertHealthSnapshots(
+      List<HealthScoreSnapshotsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) {
+      for (final r in rows) {
+        b.insert(healthScoreSnapshots, r,
+            onConflict: DoUpdate(
+              (_) => r,
+              target: [healthScoreSnapshots.day, healthScoreSnapshots.source],
+            ));
+      }
+    });
+  }
+
+  Stream<List<HealthScoreSnapshot>> watchHealthSnapshotsSince(
+          String source, DateTime since) =>
+      (select(healthScoreSnapshots)
+            ..where((t) =>
+                t.source.equals(source) &
+                t.day.isBiggerOrEqualValue(since))
+            ..orderBy([(t) => OrderingTerm.asc(t.day)]))
+          .watch();
 
   /// A cached resolve for [query] (normalized), bumping its hit count. Null on
   /// a miss.

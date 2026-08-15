@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/health_score.dart';
 import '../../domain/whoop.dart';
 import '../../health/body_signals.dart';
 import '../../health/health_providers.dart';
+import '../../health/health_score_providers.dart';
 import '../../health/whoop/whoop_client.dart';
 import '../../health/whoop/whoop_providers.dart';
 import 'metric_trend_chart.dart';
@@ -49,6 +51,7 @@ class WhoopCard extends ConsumerWidget {
                   source: BodySignalSource.whoop,
                   windowDays: 60,
                 ),
+                score: ref.watch(whoopHealthScoreProvider).value,
               ),
             ),
           WhoopFetchStatus.empty => const _Shell(
@@ -102,7 +105,10 @@ class PlatformHealthCard extends ConsumerWidget {
         return _Shell(
           title: '${signals.source.label} analytics',
           onRefresh: () => ref.invalidate(platformBodySignalsProvider),
-          child: _Signals(signals: signals),
+          child: _Signals(
+            signals: signals,
+            score: ref.watch(appleHealthScoreProvider).value,
+          ),
         );
       },
     );
@@ -231,10 +237,72 @@ class _TrackedMetric {
   final int decimals;
 }
 
+Color _healthBandColor(HealthBand band, Brightness b) {
+  final dark = b == Brightness.dark;
+  return switch (band) {
+    HealthBand.excellent => dark ? const Color(0xFF6BCB77) : const Color(0xFF2E8B57),
+    HealthBand.good => dark ? const Color(0xFF8CCf6f) : const Color(0xFF4C9A2A),
+    HealthBand.fair => dark ? const Color(0xFFE6B450) : const Color(0xFFB8860B),
+    HealthBand.low => dark ? const Color(0xFFE07A5F) : const Color(0xFFC0503A),
+  };
+}
+
+/// The card's hero: one plainly-labelled 0–100 Health Score, its band, and the
+/// window average. For Apple Health (no recovery ring) this is the headline
+/// number the source never had before.
+class _HealthScoreHeader extends StatelessWidget {
+  const _HealthScoreHeader({required this.score});
+
+  final HealthScoreView score;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final band = score.band!;
+    final color = _healthBandColor(band, theme.brightness);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text('${score.today}',
+            style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w800, color: color, height: 1)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Health score',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600)),
+              Text(band.label,
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(color: color, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+        if (score.average != null)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('avg ${score.average}',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700)),
+              Text('${score.windowDays}-day',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant)),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
 class _Signals extends StatelessWidget {
-  const _Signals({required this.signals});
+  const _Signals({required this.signals, this.score});
 
   final BodySignals signals;
+  final HealthScoreView? score;
 
   @override
   Widget build(BuildContext context) {
@@ -284,6 +352,12 @@ class _Signals extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (score?.hasScore ?? false) ...[
+          const SizedBox(height: 6),
+          _HealthScoreHeader(score: score!),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.4)),
+        ],
         const SizedBox(height: 4),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
