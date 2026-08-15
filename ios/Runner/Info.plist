@@ -47,6 +47,8 @@
 	<string>PulsIQ uses Face ID to unlock the app and protect your health data.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>PulsIQ reads your resting heart rate, HRV, respiratory rate, sleep, steps, and active minutes to show them against your personal baseline. Data never leaves your device unencrypted.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>PulsIQ does not write to Apple Health. This permission is required by the Health framework; PulsIQ only reads your health data to show it against your personal baseline.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>PulsIQ listens while you hold the pulse button to log meals, drinks, and workouts by voice.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
