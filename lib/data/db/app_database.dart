@@ -265,6 +265,35 @@ class AppDatabase extends _$AppDatabase {
         ..orderBy([(t) => OrderingTerm.desc(t.loggedAt)]))
       .watch();
 
+  // ---- History streams (range since a cutoff) -----------------------
+  // Same shape as the today streams but bounded by an arbitrary [since],
+  // used by the 1-year log history. No schema change — every row is already
+  // dated by loggedAt, so history works retroactively.
+
+  Stream<List<FoodEntry>> watchFoodsSince(DateTime since) =>
+      (select(foodEntries)
+            ..where((t) => t.loggedAt.isBiggerOrEqualValue(since))
+            ..orderBy([(t) => OrderingTerm.desc(t.loggedAt)]))
+          .watch();
+
+  Stream<List<BeverageEntry>> watchBeveragesSince(DateTime since) =>
+      (select(beverageEntries)
+            ..where((t) => t.loggedAt.isBiggerOrEqualValue(since))
+            ..orderBy([(t) => OrderingTerm.desc(t.loggedAt)]))
+          .watch();
+
+  Stream<List<HydrationEntry>> watchHydrationSince(DateTime since) =>
+      (select(hydrationEntries)
+            ..where((t) => t.loggedAt.isBiggerOrEqualValue(since))
+            ..orderBy([(t) => OrderingTerm.desc(t.loggedAt)]))
+          .watch();
+
+  Stream<List<ExerciseEntry>> watchExerciseSince(DateTime since) =>
+      (select(exerciseEntries)
+            ..where((t) => t.loggedAt.isBiggerOrEqualValue(since))
+            ..orderBy([(t) => OrderingTerm.desc(t.loggedAt)]))
+          .watch();
+
   Stream<int> watchTodayHydrationMl() {
     final sum = hydrationEntries.amountMl.sum();
     final q = selectOnly(hydrationEntries)

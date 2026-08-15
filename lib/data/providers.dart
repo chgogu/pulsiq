@@ -85,6 +85,48 @@ final logFeedProvider = Provider<AsyncValue<List<LogItem>>>((ref) {
   return AsyncData(items);
 });
 
+// ---- Log history (past year) -----------------------------------------
+
+/// Day-aligned cutoff 365 days back — the window the History screen browses.
+final historyCutoffProvider = Provider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day)
+      .subtract(const Duration(days: 365));
+});
+
+final _historyFoodsProvider = StreamProvider((ref) => ref
+    .watch(appDatabaseProvider)
+    .watchFoodsSince(ref.watch(historyCutoffProvider)));
+final _historyBeveragesProvider = StreamProvider((ref) => ref
+    .watch(appDatabaseProvider)
+    .watchBeveragesSince(ref.watch(historyCutoffProvider)));
+final _historyHydrationProvider = StreamProvider((ref) => ref
+    .watch(appDatabaseProvider)
+    .watchHydrationSince(ref.watch(historyCutoffProvider)));
+final _historyExerciseProvider = StreamProvider((ref) => ref
+    .watch(appDatabaseProvider)
+    .watchExerciseSince(ref.watch(historyCutoffProvider)));
+
+/// Every logged item over the last year, newest first — same mapping and
+/// error/loading collapsing as [logFeedProvider].
+final logHistoryProvider = Provider<AsyncValue<List<LogItem>>>((ref) {
+  final foods = ref.watch(_historyFoodsProvider);
+  final beverages = ref.watch(_historyBeveragesProvider);
+  final hydration = ref.watch(_historyHydrationProvider);
+  final exercise = ref.watch(_historyExerciseProvider);
+  for (final v in [foods, beverages, hydration, exercise]) {
+    if (v.hasError) return AsyncError(v.error!, v.stackTrace!);
+    if (!v.hasValue) return const AsyncLoading();
+  }
+  final items = <LogItem>[
+    ...foods.requireValue.map(foodToItem),
+    ...beverages.requireValue.map(beverageToItem),
+    ...hydration.requireValue.map(hydrationToItem),
+    ...exercise.requireValue.map(exerciseToItem),
+  ]..sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+  return AsyncData(items);
+});
+
 final auditTrailProvider = StreamProvider(
     (ref) => ref.watch(appDatabaseProvider).watchAudit());
 

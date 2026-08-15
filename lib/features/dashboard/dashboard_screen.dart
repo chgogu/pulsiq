@@ -47,6 +47,11 @@ class DashboardScreen extends ConsumerWidget {
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               IconButton(
+                tooltip: 'History',
+                onPressed: () => context.push('/history'),
+                icon: const Icon(Icons.history, size: 20),
+              ),
+              IconButton(
                 tooltip: 'Settings',
                 onPressed: () => context.push('/settings'),
                 icon: const Icon(Icons.settings_outlined, size: 20),

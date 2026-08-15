@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/history/history_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/sign_in_screen.dart';
 import 'features/lock/lock_gate.dart';
@@ -32,6 +33,7 @@ GoRouter buildRouter() => GoRouter(
           builder: (_, _, child) => PulsIQShell(child: child),
           routes: [
             GoRoute(path: '/home', builder: (_, _) => const DashboardScreen()),
+            GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),
             GoRoute(path: '/plus', builder: (_, _) => const PaywallScreen()),
             GoRoute(
               path: '/order-hack',
